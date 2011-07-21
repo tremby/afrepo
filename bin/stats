@@ -1,0 +1,226 @@
+#!/usr/bin/env php
+<?php
+
+$logpath = null;
+$whitelistpath = null;
+$oneline = false;
+
+array_shift($_SERVER["argv"]);
+
+while (count($_SERVER["argv"])) {
+	$arg = array_shift($_SERVER["argv"]);
+	if ($arg == "--oneline") {
+		$oneline = true;
+		continue;
+	}
+	if (!isset($logpath)) {
+		$logpath = $arg;
+		continue;
+	}
+	if (!isset($whitelistpath)) {
+		$whitelistpath = $arg;
+		continue;
+	}
+	fwrite(STDERR, "unexpected argument '$arg'\n");
+	exit(255);
+}
+
+if (!isset($logpath)) {
+	fwrite(STDERR, "expected the filename of a log CSV file\n");
+	exit(255);
+}
+
+$file = fopen($logpath, "r");
+if ($file === false) {
+	fwrite(STDERR, "couldn't open log CSV file\n");
+	exit(1);
+}
+
+if (isset($whitelistpath)) {
+	$whitelist = file($whitelistpath);
+	if ($whitelist === false) {
+		fwrite(STDERR, "couldn't open whitelist file\n");
+		exit(1);
+	}
+	foreach ($whitelist as &$path)
+		$path = trim($path);
+	$whitelist = array_flip($whitelist); //much, much faster to search keys than values
+} else {
+	$whitelist = false;
+}
+
+$total = 0;
+$en = $enmb = $db = $dbmb = array("hit" => 0, "miss" => 0, "error" => 0, "na" => 0);
+$en_and_db_hit = $en_or_db_hit = $en_vs_db_match = 0;
+$mb_and_mb_hit = $mb_or_mb_hit = $mb_vs_mb_match = 0;
+
+while ($row = fgetcsv($file, 0, "\t")) {
+	if ($whitelist && !array_key_exists($row[0], $whitelist))
+		continue;
+
+	$total++;
+	switch ($row[1]) {
+		case "HIT":
+			$en["hit"]++;
+			break;
+		case "MISS":
+			$en["miss"]++;
+			break;
+		case "NA":
+			$en["na"]++;
+			break;
+		case "ERROR":
+			$en["error"]++;
+			break;
+		default:
+			fwrite(STDERR, "got unexpected token '$row[1]' in en column of row $total\n");
+			break;
+	}
+	switch ($row[4]) {
+		case "HIT":
+			$enmb["hit"]++;
+			break;
+		case "MISS":
+			$enmb["miss"]++;
+			break;
+		case "NA":
+			$enmb["na"]++;
+			break;
+		case "ERROR":
+			$enmb["error"]++;
+			break;
+		default:
+			fwrite(STDERR, "got unexpected token '$row[4]' in enmb column of row $total\n");
+			break;
+	}
+	switch ($row[8]) {
+		case "HIT":
+			$db["hit"]++;
+			break;
+		case "MISS":
+			$db["miss"]++;
+			break;
+		case "NA":
+			$db["na"]++;
+			break;
+		case "ERROR":
+			$db["error"]++;
+			break;
+		default:
+			fwrite(STDERR, "got unexpected token '$row[7]' in db column of row $total\n");
+			break;
+	}
+	switch ($row[11]) {
+		case "HIT":
+			$dbmb["hit"]++;
+			break;
+		case "MISS":
+			$dbmb["miss"]++;
+			break;
+		case "NA":
+			$dbmb["na"]++;
+			break;
+		case "ERROR":
+			$dbmb["error"]++;
+			break;
+		default:
+			fwrite(STDERR, "got unexpected token '$row[10]' in dbmb column of row $total\n");
+			break;
+	}
+
+	// en or db hit?
+	if ($row[1] == "HIT" || $row[8] == "HIT")
+		$en_or_db_hit++;
+
+	// en and db both hit?
+	if ($row[1] == "HIT" && $row[8] == "HIT") {
+		$en_and_db_hit++;
+		// artist and title match?
+		if (strtolower($row[2]) == strtolower($row[9]) && strtolower($row[3]) == strtolower($row[10]))
+			$en_vs_db_match++;
+	}
+
+	// either mb hit?
+	if ($row[4] == "HIT" || $row[11] == "HIT")
+		$mb_or_mb_hit++;
+
+	// enmb and dbmb both hit?
+	if ($row[4] == "HIT" && $row[11] == "HIT") {
+		$mb_and_mb_hit++;
+		// artist and title match?
+		if (strtolower($row[5]) == strtolower($row[12]) && strtolower($row[6]) == strtolower($row[13]))
+			$mb_vs_mb_match++;
+	}
+}
+
+function p($top, $bottom) {
+	if ($bottom == 0)
+		return "INF%";
+	return sprintf("%.3f", 100 * $top / $bottom) . "%";
+}
+
+if ($oneline) {
+	echo $total . "\t";
+
+	echo p($en["hit"], $total) . "\t" . p($en["miss"], $total) . "\t" . p($en["error"], $total) . "\t";
+	echo p($enmb["hit"], $en["hit"]) . "\t" . p($enmb["miss"], $en["hit"]) . "\t" . p($enmb["error"], $en["hit"]) . "\t";
+	echo p($enmb["hit"], $total) . "\t" . p($enmb["miss"], $total) . "\t" . p($enmb["error"], $total) . "\t";
+
+	echo p($db["hit"], $total) . "\t" . p($db["miss"], $total) . "\t" . p($db["error"], $total) . "\t";
+
+	echo p($dbmb["hit"], $db["hit"]) . "\t" . p($dbmb["miss"], $db["hit"]) . "\t" . p($dbmb["error"], $db["hit"]) . "\t";
+	echo p($dbmb["hit"], $total) . "\t" . p($dbmb["miss"], $total) . "\t" . p($dbmb["error"], $total) . "\t";
+
+	echo p($en_or_db_hit, $total) . "\t";
+	echo p($mb_or_mb_hit, $total) . "\t";
+
+	echo p($en_and_db_hit, $total) . "\t";
+	echo p($en_vs_db_match, $en_and_db_hit) . "\t";
+	echo p($en_vs_db_match, $total) . "\t";
+
+	echo p($mb_and_mb_hit, $total) . "\t";
+	echo p($mb_vs_mb_match, $mb_and_mb_hit) . "\t";
+	echo p($mb_vs_mb_match, $total);
+
+	echo "\n";
+	exit;
+}
+
+echo "
+total files:\t$total
+
+EN
+\thit\tmiss\terror
+\t" . p($en["hit"], $total) . "\t" . p($en["miss"], $total) . "\t" . p($en["error"], $total) . "\tof all files
+
+for EN's artist/title pairs, MB has
+\thit\tmiss\terror
+\t" . p($enmb["hit"], $en["hit"]) . "\t" . p($enmb["miss"], $en["hit"]) . "\t" . p($enmb["error"], $en["hit"]) . "\tof the hits
+\t" . p($enmb["hit"], $total) . "\t" . p($enmb["miss"], $total) . "\t" . p($enmb["error"], $total) . "\tof all files
+
+DB
+\thit\tmiss\terror
+\t" . p($db["hit"], $total) . "\t" . p($db["miss"], $total) . "\t" . p($db["error"], $total) . "\tof all files
+
+for DB's artist/title pairs, MB has
+\thit\tmiss\terror
+\t" . p($dbmb["hit"], $db["hit"]) . "\t" . p($dbmb["miss"], $db["hit"]) . "\t" . p($dbmb["error"], $db["hit"]) . "\tof the hits
+\t" . p($dbmb["hit"], $total) . "\t" . p($dbmb["miss"], $total) . "\t" . p($dbmb["error"], $total) . "\tof all files
+
+either EN or DB hit
+\t" . p($en_or_db_hit, $total) . "\tof all files
+either EN or DB hit, and MB found a match for the pair in either case
+\t" . p($mb_or_mb_hit, $total) . "\tof all files
+
+both EN and DB hit
+\t" . p($en_and_db_hit, $total) . "\tof all files
+EN and DB artist/title pairs match
+\t" . p($en_vs_db_match, $en_and_db_hit) . "\tof those files for which both EN and DB hit
+\t" . p($en_vs_db_match, $total) . "\tof all files
+
+MB finds matches for both EN's artist/title pair and DB's artist/title pair
+\t" . p($mb_and_mb_hit, $total) . "\tof all files
+those MB artist/title pairs match
+\t" . p($mb_vs_mb_match, $mb_and_mb_hit) . "\tof those files for which MB finds matches for both pairs
+\t" . p($mb_vs_mb_match, $total) . "\tof all files
+";

@@ -1,0 +1,6 @@
+[submodule "arc2"]
+	path = lib/arc2
+	url = git://github.com/tremby/arc2.git
+[submodule "Graphite"]
+	path = lib/Graphite
+	url = git://github.com/cgutteridge/Graphite.git
