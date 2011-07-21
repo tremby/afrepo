@@ -2,3 +2,6 @@ rdf/*
 ! rdf/README
 repositories/*
 ! repositories/README
+*.pyc
+*.swp
+*.swo
