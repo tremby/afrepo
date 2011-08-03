@@ -40,7 +40,7 @@ class SalamiClassifier extends AFClassifierBase {
 
 		// grab metadata from CSV file
 		while (($data = fgetcsv($fh, 0, "\t")) !== false) {
-			if ($data[4] == $filepath) {
+			if ($data[4] == $origfilepath) {
 				$md["set"] = $data[0];
 				$md["subset"] = $data[1];
 				$md["artist"] = $data[2];
