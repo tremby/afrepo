@@ -17,6 +17,7 @@ $opts->add(null, "canonical-paths", CliOption::TYPE_SWITCH, null, "Output canoni
 $opts->add(null, "force", CliOption::TYPE_SWITCH, null, "Skip any cached files and run the classifier anew");
 $opts->add(null, "force-missing", CliOption::TYPE_SWITCH, null, "Like --force but only for those missing MBIDs");
 $opts->add(null, "id", CliOption::TYPE_SWITCH, null, "Interpret arguments as IDs rather than paths");
+$opts->add("l", "list", CliOption::TYPE_SWITCH, null, "List available classifiers and exit");
 
 function usage($code = 255) {
 	global $opts;
@@ -38,6 +39,14 @@ try {
 // help message if requested
 if ($options["help"]) {
 	usage(0);
+}
+
+// classifier list if requested
+if ($options["list"]) {
+	echo "Available classifiers:\n\n";
+	foreach (allclassifiers() as $classname => $classifier)
+		echo "$classname\n\t" . $classifier->getName() . "\n\n\t" . wordwrap($classifier->getDescription(), 70, "\n\t") . "\n\n";
+	exit;
 }
 
 // get list of classifiers to use
