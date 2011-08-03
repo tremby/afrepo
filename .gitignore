@@ -7,6 +7,8 @@ repositories/*
 !repositories/README
 classifiers/*
 !classifiers/README
+!classifiers/EchonestClassifier.class.php
+!classifiers/IMIRSELdbClassifier.class.php
 dbsetup.sh
 audio
 AFRepo.class.php
