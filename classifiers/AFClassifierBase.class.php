@@ -121,7 +121,7 @@ abstract class AFClassifierBase {
 // return an array of all classifiers, indexed by class name
 function allclassifiers() {
 	$classifiers = array();
-	foreach (glob(dirname(__FILE__) . "/classifiers/*Classifier.class.php") as $file) {
+	foreach (glob(dirname(__FILE__) . "/*Classifier.class.php") as $file) {
 		$classname = basename($file, ".class.php");
 		include $file;
 		$classifiers[$classname] = new $classname;
