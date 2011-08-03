@@ -16,6 +16,7 @@ $opts->add(null, "output-metadata", CliOption::TYPE_SWITCH, null, "Output metada
 $opts->add(null, "canonical-paths", CliOption::TYPE_SWITCH, null, "Output canonical paths rather than file IDs");
 $opts->add(null, "force", CliOption::TYPE_SWITCH, null, "Skip any cached files and run the classifier anew");
 $opts->add(null, "force-missing", CliOption::TYPE_SWITCH, null, "Like --force but only for those missing MBIDs");
+$opts->add(null, "id", CliOption::TYPE_SWITCH, null, "Interpret arguments as IDs rather than paths");
 
 function usage($code = 255) {
 	global $opts;
@@ -55,16 +56,20 @@ if (is_array($options["classifier"])) {
 
 // get list of files to classify
 $repo = new AFRepo();
-if (empty($options["_"]))
+if (empty($options["_"])) {
+	$options["id"] = false;
 	$options["_"] = array_keys($repo->getAllFiles());
-else
+} else
 	$options["output-metadata"] = true;
 
 // loop through files
 $fcount = 0;
 foreach ($options["_"] as $file) {
 	$fcount++;
-	$id = $repo->filePathToId($file);
+	if ($options["id"])
+		$id = $file;
+	else
+		$id = $repo->filePathToId($file);
 
 	echo "file $fcount of " . count($options["_"]);
 	echo "\t";
