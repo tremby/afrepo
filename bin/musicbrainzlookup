@@ -61,7 +61,7 @@ if (!$options["scores"] && !$options["info"]) {
 		foreach ($mbid as $id)
 			echo $id . "\n";
 	else
-		echo "hi" . $mbid . "\n";
+		echo $mbid . "\n";
 	exit;
 }
 
