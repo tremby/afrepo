@@ -66,13 +66,17 @@ $progress_length = 60;
 echo "[" . str_repeat(" ", $progress_length) . "]";
 $i = 0;
 $count = count($allfiles);
+$oldequals = -1;
 foreach (array_keys($allfiles) as $file) {
 	// tick progress
 	$i++;
 	$equals = round($progress_length * $i / $count) - 1;
 	if ($equals < 0)
 		$equals = 0;
-	echo "\r[" . str_repeat("=", $equals) . ">" . str_repeat(" ", $progress_length - $equals - 1) . "]";
+	if ($equals != $oldequals) {
+		echo "\r[" . str_repeat("=", $equals) . ">" . str_repeat(" ", $progress_length - $equals - 1) . "]";
+		$oldequals = $equals;
+	}
 
 	$linkpath = $repo->filePathToLinkPath($file);
 	if (!is_dir(dirname($linkpath)))
