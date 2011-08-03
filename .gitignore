@@ -3,8 +3,6 @@
 *.swo
 rdf/*
 !rdf/README
-repositories/*
-!repositories/README
 classifiers/*
 !classifiers/README
 !classifiers/EchonestClassifier.class.php
