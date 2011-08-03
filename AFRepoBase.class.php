@@ -45,7 +45,12 @@ abstract class AFRepoBase {
 	 * is in the repository or false if not
 	 */
 	public function inRepo($filepath) {
-		return array_key_exists(realpath($filepath), $this->getAllFiles());
+		$realpath = realpath($filepath);
+		if ($realpath === false) {
+			trigger_error("file '$filepath' does not exist on disk or is a broken symlink", E_USER_WARNING);
+			return false;
+		}
+		return array_key_exists($realpath, $this->getAllFiles());
 	}
 
 	/**
