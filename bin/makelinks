@@ -48,9 +48,11 @@ if (!is_dir($repo->getAudioPath()))
 
 // delete things in that directory (old symlinks, old metadata, other files, 
 // empty directories, according to options)
+echo "looking through existing structure, deleting anything necessary according to options...\n";
 deletethingsfrom($repo->getAudioPath());
 
 // get list of files in repository
+echo "getting list of files in repository...\n";
 try {
 	$allfiles = $repo->getAllFiles();
 } catch (Exception $e) {
@@ -59,7 +61,19 @@ try {
 }
 
 // loop through files, make new links
+echo "making new links\n";
+$progress_length = 60;
+echo "[" . str_repeat(" ", $progress_length) . "]";
+$i = 0;
+$count = count($allfiles);
 foreach (array_keys($allfiles) as $file) {
+	// tick progress
+	$i++;
+	$equals = round($progress_length * $i / $count) - 1;
+	if ($equals < 0)
+		$equals = 0;
+	echo "\r[" . str_repeat("=", $equals) . ">" . str_repeat(" ", $progress_length - $equals - 1) . "]";
+
 	$linkpath = $repo->filePathToLinkPath($file);
 	if (!is_dir(dirname($linkpath)))
 		mkdir(dirname($linkpath));
@@ -72,6 +86,7 @@ foreach (array_keys($allfiles) as $file) {
 	} else
 		symlink($file, $linkpath);
 }
+echo "\n";
 
 exit;
 
