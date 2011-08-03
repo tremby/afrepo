@@ -1,0 +1,4 @@
+This is where extensions of AFClassifier are put.
+
+The files should be named the same as the classes, with a ".class.php" 
+extension.

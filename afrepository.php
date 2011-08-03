@@ -1,31 +1,25 @@
 <?php
 
+// FIXME: this is in a broken state
+
 require_once "lib/arc2/ARC2.php";
 require_once "lib/Graphite/graphite/Graphite.php";
 require_once "AFRepo.class.php";
-
-/* TODO: choose repository based on hostname, something like
-$repository = null;
-foreach (AFRepo::getRepositories() as $r)
-	if ($repository->getHostname() == $_SERVER["HTTP_HOST"])
-		$repository = $r;
-if (is_null($repository))
-	trigger_error("tried to serve a request at a hostname not associated with any AF repo", E_USER_ERROR);
- */
-$repository = AFRepo::getRepository($_SERVER["argv"][1]); //TODO: remove
 
 define("RDF_DIR", dirname(__FILE__) . "/rdf");
 
 if (!isset($_SERVER["argv"][2])) //TODO: change to get var
 	trigger_error("expected a file ID", E_USER_ERROR);
 
+$repo = new AFRepo();
+
 $fileid = $_SERVER["argv"][2]; //TODO: change to get var
-$filepath = $repository->getAudioPath() . "/" . splitid($fileid);
-$rdfpath = RDF_DIR . "/" . splitid($fileid);
+$filepath = $repo->idToLinkPath($fileid);
+$rdfpath = RDF_DIR . "/" . AFRepo::splitId($fileid);
 
 // check file exists
 if (!file_exists($filepath))
-	trigger_error("file with id '$fileid' doesn't exist", E_USER_ERROR);
+	throw new Exception("file with id '$fileid' doesn't exist");
 
 // if RDF already exists and is newer than this script, use that
 // delete it if it's out of date
@@ -37,17 +31,17 @@ if (file_exists($rdfpath)) {
 }
 
 // get the preferred file of this track
-$preferredfilepath = $repository->getPreferredFile($filepath);
+$preferredfilepath = $repo->getPreferredFile($filepath);
 $preferredfileid = md5($preferredfilepath);
 $ispreferred = $fileid == $preferredfileid;
 
 // gather information about the audiofile and its signal
-$metadata = $repository->getMetadata($filepath);
+$metadata = $repo->getMetadata($filepath);
 if (!$ispreferred)
-	$preferredmetadata = $repository->getMetadata($preferredfilepath);
+	$preferredmetadata = $repo->getMetadata($preferredfilepath);
 
 // get Musicbrainz ID
-$mburi = $repository->getMusicbrainzID($preferredfilepath);
+$mburi = $repo->getMusicbrainzID($preferredfilepath);
 
 // RDF
 // mo:DigitalSignal (is a mo:Signal which is a mo:MusicalExpression)
@@ -84,7 +78,7 @@ $ns = array(
 	"tl" => "http://purl.org/NET/c4dm/timeline.owl#",
 	"mo" => "http://purl.org/ontology/mo/",
 	"time" => "http://www.w3.org/2006/time#",
-	"repository" => $repository->getURIPrefix(),
+	"repository" => $repo->getURIPrefix(),
 );
 
 // triple endings for our mo:AudioFile, which is a mo:MusicalItem
@@ -104,7 +98,7 @@ $signaltriples = array(
 	"a mo:DigitalSignal",
 	"mo:time [
 		a time:Interval ;
-		time:seconds " . AFRepo::medialength($filepath) . " ;
+		time:seconds " . medialength($filepath) . " ;
 	]",
 );
 if ($ispreferred)
@@ -131,7 +125,7 @@ $tracktriples = array(
 	"a mo:Track",
 	"mo:publication_of repository:$fileid#signal",
 );
-foreach ($repository->getAllFiles($filepath) as $file)
+foreach ($repo->getAllFiles($filepath) as $file)
 	$tracktriples[] = "mo:available_as repository:" . md5($file);
 
 // turn those triple endings into turtle triples
@@ -145,7 +139,7 @@ if (!empty($preferredsignaltriples))
 
 // convert that to RDF/XML (leaving it as Turtle at the moment)
 $parser = ARC2::getTurtleParser();
-$parser->parse($repository->getURIPrefix(), $turtle);
+$parser->parse($repo->getURIPrefix(), $turtle);
 $serializer = ARC2::getRDFXMLSerializer(array("ns" => $ns));
 $serializer = ARC2::getTurtleSerializer(array("ns" => $ns)); //TODO: get rid of this, use the above
 $output = $serializer->getSerializedTriples($parser->getTriples());

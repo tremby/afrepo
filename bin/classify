@@ -1,0 +1,105 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "classifier", CliOption::TYPE_MULTIPLEVALUE, null, "Use the given classifier rather than using all classifiers. Can be used more than once to pick multiple classifiers.");
+$opts->add(null, "output-metadata", CliOption::TYPE_SWITCH, null, "Output metadata as it is found");
+$opts->add(null, "canonical-paths", CliOption::TYPE_SWITCH, null, "Output canonical paths rather than file IDs");
+$opts->add(null, "force", CliOption::TYPE_SWITCH, null, "Skip any cached files and run the classifier anew");
+$opts->add(null, "force-missing", CliOption::TYPE_SWITCH, null, "Like --force but only for those missing MBIDs");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] [<filepath> [...]]\n");
+	fwrite($stream, "With no file paths listed all files in the repository will be classified.\n");
+	fwrite($stream, "If one or more paths is listed the --output-metadata option is implicit.\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// get list of classifiers to use
+if (is_array($options["classifier"])) {
+	$classifiers = array();
+	foreach ($options["classifier"] as $classname) {
+		$classifier = getclassifier($classname);
+		if ($classifier === false) {
+			fwrite(STDERR, "classifier '" . $options["classifier"] . "' doesn't exist\n");
+			exit(255);
+		}
+		$classifiers[] = $classifier;
+	}
+} else
+	$classifiers = allclassifiers();
+
+// get list of files to classify
+$repo = new AFRepo();
+if (empty($options["_"]))
+	$options["_"] = array_keys($repo->getAllFiles());
+else
+	$options["output-metadata"] = true;
+
+// loop through files
+$fcount = 0;
+foreach ($options["_"] as $file) {
+	$fcount++;
+	$id = $repo->filePathToId($file);
+
+	echo "file $fcount of " . count($options["_"]);
+	echo "\t";
+	if ($options["canonical-paths"])
+		echo realpath($file);
+	else
+		echo $id;
+
+	// loop through classifiers
+	foreach ($classifiers as $classifier) {
+		echo "\t";
+		if (!$options["classifier"])
+			echo "classifier " . get_class($classifier) . "\n";
+
+		if ($options["force-missing"] && $classifier->hasMBID($id)) {
+			echo $classifier->getMBID($id);
+			continue;
+		}
+
+		$metadata = $classifier->classify($id, $options["force-missing"] || $options["force"]);
+		if ($metadata === false)
+			echo str_pad("error", 36, "-", STR_PAD_BOTH);
+		else if ($options["output-metadata"])
+			print_r($metadata);
+		else {
+			$mbid = $classifier->getMBID($id);
+			if (is_null($mbid))
+				echo str_pad("MBID not found", 36, "-", STR_PAD_BOTH);
+			else
+				echo $mbid;
+		}
+	}
+	echo "\n";
+}
+
+exit;
+
+?>

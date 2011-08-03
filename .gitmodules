@@ -4,3 +4,6 @@
 [submodule "Graphite"]
 	path = lib/Graphite
 	url = git://github.com/cgutteridge/Graphite.git
+[submodule "clioptions"]
+	path = lib/clioptions
+	url = git://github.com/tremby/clioptions.git

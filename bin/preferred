@@ -1,0 +1,72 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "canonical", CliOption::TYPE_SWITCH, null, "return the canonical path (default)");
+$opts->add(null, "link", CliOption::TYPE_SWITCH, null, "return the link path");
+$opts->add(null, "id", CliOption::TYPE_SWITCH, null, "return the ID");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] <filepath>\n");
+	fwrite($stream, "Output the preferred file which according to the repository is the same song as the given filename. For instance, given the filename of a lossy clip of a song this might return the full lossless version.\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// expect a single argument
+if (count($options["_"]) != 1) {
+	fwrite(STDERR, "expected one argument -- the filename of the audio file\n\n");
+	usage();
+}
+
+// complain if multiple modes are used
+if ($options["canonical"] + $options["link"] + $options["id"] > 1) {
+	fwrite(STDERR, "expected only one of --canonical, --link or --id\n\n");
+	usage();
+}
+
+$repo = new AFRepo();
+$file = $options["_"][0];
+
+try {
+	$preferred = $repo->getPreferredId($repo->filePathToId($file));
+	if ($preferred === false) {
+		fwrite(STDERR, "the given file is not in the repository\n");
+		exit(1);
+	}
+	if ($options["id"])
+		echo $preferred;
+	else if ($options["link"])
+		echo $repo->idToLinkPath($preferred);
+	else
+		echo $repo->idToCanonicalPath($preferred);
+	echo "\n";
+} catch (Exception $e) {
+	fwrite(STDERR, $e->getMessage() . "\n");
+	exit(2);
+}
+
+?>

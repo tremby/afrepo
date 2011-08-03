@@ -1,0 +1,67 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "preferred-only", CliOption::TYPE_SWITCH, null, "Show only the preferred file for each song -- that is, weed out clips and lower quality versions if such information is available");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options]\n");
+	fwrite($stream, "Give a list of all files in the audiofile repository\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// complain if unexpected arguments
+if (count($options["_"]) != 0) {
+	fwrite(STDERR, "expected no non-option arguments\n\n");
+	usage();
+}
+
+$repo = new AFRepo();
+try {
+	$allfiles = $repo->getAllFiles();
+} catch (Exception $e) {
+	fwrite(STDERR, $e->getMessage() . "\n");
+	exit(1);
+}
+
+if ($options["preferred-only"]) {
+	foreach (array_keys($allfiles) as $file) {
+		try {
+			if ($file == $repo->getPreferredFile($repo->filePathToId($file)))
+				echo $file . "\n";
+		} catch (Exception $e) {
+			fwrite(STDERR, $e->getMessage() . "\n");
+			exit(2);
+		}
+	}
+} else
+	foreach (array_keys($allfiles) as $file)
+		echo $file . "\n";
+
+exit;
+
+?>

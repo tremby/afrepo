@@ -1,0 +1,111 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline arguments
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "no-delete-existing-links", CliOption::TYPE_SWITCH, null, "Leave alone any existing links found in the audio subdirectory -- by default these are deleted and may be replaced with new links");
+$opts->add(null, "delete-other", CliOption::TYPE_SWITCH, null, "Delete any non-link files found in the audio subdirectory -- this could include previously made classifications. By default such files are left alone.");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options]\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// complain if unexpected arguments
+if (count($options["_"]) != 0) {
+	fwrite(STDERR, "expected no non-option arguments\n\n");
+	usage();
+}
+
+$repo = new AFRepo();
+
+// make symlinks dir if it doesn't exist
+if (!is_dir($repo->getAudioPath()))
+	mkdir($repo->getAudioPath(), 0777, true);
+
+// delete things in that directory (old symlinks, old metadata, other files, 
+// empty directories, according to options)
+deletethingsfrom($repo->getAudioPath());
+
+// get list of files in repository
+try {
+	$allfiles = $repo->getAllFiles();
+} catch (Exception $e) {
+	fwrite(STDERR, $e->getMessage() . "\n");
+	exit(1);
+}
+
+// loop through files, make new links
+foreach (array_keys($allfiles) as $file) {
+	$linkpath = $repo->filePathToLinkPath($file);
+	if (!is_dir(dirname($linkpath)))
+		mkdir(dirname($linkpath));
+	if (file_exists($linkpath)) {
+		if (is_link($linkpath)) {
+			if (realpath($linkpath) != $file)
+				trigger_error("wanted to write symlink '$linkpath' pointing to '$file' but it already exists pointing to '" . realpath($linkpath) . "'", E_USER_WARNING);
+		} else
+			trigger_error("wanted to write symlink '$linkpath' pointing to '$file' a non-link file already exists there", E_USER_WARNING);
+	} else
+		symlink($file, $linkpath);
+}
+
+exit;
+
+// recursive method to delete things from the links directory according to the 
+// options
+function deletethingsfrom($path, $depth = 0) {
+	global $options;
+
+	$empty = true;
+	$dir = dir($path);
+	while (($entry = $dir->read()) !== false) {
+		if ($entry == "." || $entry == "..")
+			continue;
+		$fullpath = $path . "/" . $entry;
+		if (!is_link($fullpath) && is_dir($fullpath)) {
+			if (!deletethingsfrom($fullpath, $depth + 1))
+				$empty = false;
+		} else if (is_link($fullpath)) {
+			if (!$options["no-delete-existing-links"])
+				unlink($fullpath);
+			else
+				$empty = false;
+		} else if (is_file($fullpath)) {
+			if ($options["delete-other"])
+				unlink($fullpath);
+			else
+				$empty = false;
+		}
+	}
+	$dir->close();
+
+	if ($empty && $depth > 0)
+		$empty &= rmdir($path);
+	return $empty;
+}
+
+?>

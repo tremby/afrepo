@@ -1,7 +1,11 @@
-rdf/*
-! rdf/README
-repositories/*
-! repositories/README
 *.pyc
 *.swp
 *.swo
+rdf/*
+!rdf/README
+repositories/*
+!repositories/README
+classifiers/*
+!classifiers/README
+dbsetup.sh
+audio

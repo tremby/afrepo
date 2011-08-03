@@ -1,0 +1,97 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "limit", CliOption::TYPE_VALUE, "1", "Maximum number of results (default 1)");
+$opts->add(null, "scores", CliOption::TYPE_SWITCH, null, "Show scores of results");
+$opts->add(null, "info", CliOption::TYPE_SWITCH, null, "Show more info about results");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] <artist> <title>\n");
+	fwrite($stream, "Look up an artist and title in Musicbrainz to return the MBID");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// complain if unexpected arguments
+if (count($options["_"]) != 2) {
+	fwrite(STDERR, "expected two non-option arguments\n\n");
+	usage();
+}
+
+// complain if invalid limit
+if (!is_numeric($options["limit"])) {
+	fwrite(STDERR, "expected limit to be an integer of 1 or more\n");
+	usage();
+} else {
+	$limit = intVal($options["limit"]);
+	if ($limit < 1) {
+		fwrite(STDERR, "expected limit to be an integer of 1 or more\n");
+		usage();
+	}
+}
+
+$mbid = musicbrainzLookup($options["_"][0], $options["_"][1], $limit, $fullresponse);
+
+if (!$options["scores"] && !$options["info"]) {
+	if (is_array($mbid))
+		foreach ($mbid as $id)
+			echo $id . "\n";
+	else
+		echo "hi" . $mbid . "\n";
+	exit;
+}
+
+$xml = simplexml_load_string($fullresponse);
+if (!$fullresponse) {
+	fwrite(STDERR, "couldn't parse Musicbrainz's response as XML\n");
+	exit(1);
+}
+foreach ($xml->{"recording-list"}->recording as $recording) {
+	echo (string) $recording["id"];
+	if ($options["scores"]) {
+		echo "\t";
+		$a = $recording->attributes("http://musicbrainz.org/ns/ext#-2.0");
+		echo $a["score"];
+	}
+	if ($options["info"]) {
+		echo "\t" . htmlspecialchars_decode($recording->{"artist-credit"}->{"name-credit"}->artist->name);
+		echo "\t" . htmlspecialchars_decode($recording->title);
+		foreach ($recording->{"release-list"}->release as $release) {
+			echo "\n";
+			echo "\t" . htmlspecialchars_decode($release->title);
+			echo "\t" . htmlspecialchars_decode($release->date);
+			echo "\t" . htmlspecialchars_decode($release->country);
+			echo "\t" . htmlspecialchars_decode($release->{"medium-list"}->medium->format) . " " . $release->{"medium-list"}->medium->position;
+			echo "\ttrack " . (intVal($release->{"medium-list"}->medium->{"track-list"}["offset"]) + 1);
+		}
+	}
+	echo "\n";
+}
+
+exit;
+
+?>
