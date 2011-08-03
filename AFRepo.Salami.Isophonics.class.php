@@ -7,7 +7,7 @@
  */
 
 require_once "AFRepo.Salami.class.php";
-class AFRepo extends SalamiAFRepo {
+class AFRepo extends SalamiAFRepoBase {
 	public function getName() {
 		return "Salami Isophonics";
 	}

@@ -4,7 +4,7 @@
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  */
 
-class EchonestClassifier extends AFClassifier {
+class EchonestClassifier extends AFClassifierBase {
 	private function getAPIKey() {
 		return "1WJE4HXGNDRCZ7MMK";
 	}

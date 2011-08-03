@@ -7,7 +7,7 @@
  */
 
 require_once "AFRepoBase.class.php";
-abstract class SalamiAFRepo extends AFRepoBase {
+abstract class SalamiAFRepoBase extends AFRepoBase {
 	private $allfiles = null;
 
 	protected function allSalamiFiles($col1) {

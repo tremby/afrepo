@@ -3,14 +3,14 @@
 /**
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  *
- * AFClassifier
+ * AFClassifierBase
  *
- * This is the base AFClassifier class. It is extended for the various available 
+ * This is the base Classifier class. It is extended for the various available 
  * classifiers, more of which can (and probably should) be made for each 
  * repository.
  */
 
-abstract class AFClassifier {
+abstract class AFClassifierBase {
 	/**
 	 * getName
 	 * Return the name of this classifier (a short string)
@@ -121,7 +121,7 @@ abstract class AFClassifier {
 // return an array of all classifiers, indexed by class name
 function allclassifiers() {
 	$classifiers = array();
-	foreach (glob(dirname(__FILE__) . "/classifiers/*.class.php") as $file) {
+	foreach (glob(dirname(__FILE__) . "/classifiers/*Classifier.class.php") as $file) {
 		$classname = basename($file, ".class.php");
 		include $file;
 		$classifiers[$classname] = new $classname;
@@ -131,7 +131,9 @@ function allclassifiers() {
 
 // return a particular classifier or false
 function getclassifier($classname) {
-	$file = dirname(__FILE__) . "/classifiers/$classname.class.php";
+	if (!preg_match('%Classifier$%', $classname))
+		trigger_error("trying to load a classifier which is not named according to convention", E_USER_WARNING);
+	$file = dirname(__FILE__) . "/$classname.class.php";
 	if (!file_exists($file))
 		return false;
 	require_once $file;

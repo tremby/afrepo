@@ -4,7 +4,7 @@
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  */
 
-class IMIRSELdbClassifier extends AFClassifier {
+class IMIRSELdbClassifier extends AFClassifierBase {
 	private $db = null;
 
 	public function getName() {
