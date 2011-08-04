@@ -178,8 +178,8 @@ class EchonestClassifier extends AFClassifierBase {
 		 */
 
 		$formed_out = json_decode($query_text, true);
-		if (is_null($formed_out) || !isset($formed_out[0])) {
-			fwrite(STDERR, "unexpected output from enmfp\n");
+		if (!empty($error_output) || is_null($formed_out) || !isset($formed_out[0])) {
+			fwrite(STDERR, "unexpected output from enmfp: '$query_text'\nerror output: '$error_output'\n");
 			return false;
 		}
 		if (isset($formed_out[0]["error"])) {
