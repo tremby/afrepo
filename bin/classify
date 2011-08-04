@@ -25,6 +25,7 @@ function usage($code = 255) {
 	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] [<filepath> [...]]\n");
 	fwrite($stream, "With no file paths listed all files in the repository will be classified.\n");
 	fwrite($stream, "If one or more paths is listed the --output-metadata option is implicit.\n");
+	fwrite($stream, "If there were errors classifying any file, exit with an error status (1), otherwise success.\n");
 	fwrite($stream, $opts->listopts());
 	exit($code);
 }
@@ -73,6 +74,7 @@ if (empty($options["_"])) {
 
 // loop through files
 $fcount = 0;
+$errorids = array();
 foreach ($options["_"] as $file) {
 	$fcount++;
 	if ($options["id"])
@@ -99,8 +101,10 @@ foreach ($options["_"] as $file) {
 		}
 
 		$metadata = $classifier->classify($id, $options["force-missing"] || $options["force"]);
-		if ($metadata === false)
+		if ($metadata === false) {
+			$errorids[] = $id;
 			echo str_pad("error", 36, "-", STR_PAD_BOTH);
+		}
 		else if ($options["output-metadata"])
 			print_r($metadata);
 		else {
@@ -112,6 +116,13 @@ foreach ($options["_"] as $file) {
 		}
 	}
 	echo "\n";
+}
+echo "finished\n";
+if (count($errorids)) {
+	echo count($errorids) . " errors, affecting files with IDs\n";
+	foreach (array_unique($errorids) as $id)
+		echo "$id\n";
+	exit(1);
 }
 
 exit;
