@@ -5,6 +5,8 @@
  */
 
 class EchonestClassifier extends AFClassifierBase {
+	const ECHONEST_REQUESTS_PER_MIN = 120;
+
 	private function getAPIKey() {
 		return "1WJE4HXGNDRCZ7MMK";
 	}
@@ -35,12 +37,12 @@ class EchonestClassifier extends AFClassifierBase {
 			if (!$query_text)
 				return false;
 			$en_response = $this->queryechonest($query_text);
-			if (count($en_response["response"]["songs"]) == 0) {
+			if (!isset($en_response["response"]["songs"]) || count($en_response["response"]["songs"]) == 0) {
 				$query_text = $this->fingerprint($filepath, 30, 120);
 				if (!$query_text)
 					return false;
 				$en_response = $this->queryechonest($query_text);
-				if (count($en_response["response"]["songs"]) == 0) {
+				if (!isset($en_response["response"]["songs"]) || count($en_response["response"]["songs"]) == 0) {
 					$query_text = $this->fingerprint($filepath, 0, 300);
 					if (!$query_text)
 						return false;
@@ -198,6 +200,7 @@ class EchonestClassifier extends AFClassifierBase {
 	}
 
 	private function queryechonest($query_json) {
+		$this->echonestdelay();
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_URL, "http://developer.echonest.com/api/v4/song/identify?api_key=" . $this->getAPIKey());
 		curl_setopt($curl, CURLOPT_POSTFIELDS, "query=" . json_encode($query_json));
@@ -212,6 +215,7 @@ class EchonestClassifier extends AFClassifierBase {
 	}
 
 	private function queryForMBID($enid) {
+		$this->echonestdelay();
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_URL, "http://developer.echonest.com/api/v4/song/profile?api_key=" . $this->getAPIKey() . "&format=json&bucket=id:musicbrainz&id=" . $enid);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -222,5 +226,45 @@ class EchonestClassifier extends AFClassifierBase {
 		}
 
 		return json_decode($response, true);
+	}
+
+	// wait a little while if necessary before querying Echonest
+	private function echonestdelay() {
+		$lockdir = sys_get_temp_dir() . "/echonest.lock";
+		$filename = sys_get_temp_dir() . "/echonest.time";
+
+		// get a lock
+		while (!@mkdir($lockdir))
+			usleep(100000);
+
+		// check echonest timing file
+		if (!file_exists($filename))
+			// it doesn't exist -- write new one
+			file_put_contents($filename, serialize(array(time(), 1)));
+		else {
+			// get file contents
+			list($time, $count) = unserialize(file_get_contents($filename));
+
+			// check time
+			if (time() >= $time + 60)
+				// at least a minute ago -- write new one
+				file_put_contents($filename, serialize(array(time(), 1)));
+			else {
+				// check count
+				if ($count >= self::ECHONEST_REQUESTS_PER_MIN) {
+					// maximum requests in the minute reached -- wait until 
+					// we're in a new minute, then write a new file
+					while (time() < $time + 60)
+						sleep(1);
+					file_put_contents($filename, serialize(array(time(), 1)));
+				} else {
+					// increment count, write file back out
+					file_put_contents($filename, serialize(array($time, $count + 1)));
+				}
+			}
+		}
+
+		// release lock
+		rmdir($lockdir);
 	}
 }
