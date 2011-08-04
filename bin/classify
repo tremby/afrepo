@@ -123,7 +123,8 @@ if ($thread === false) {
 		$errorids = array();
 		foreach ($errorfiles as $errorfile) {
 			if (file_exists($errorfile)) {
-				$errorids = array_merge($errorids, unserialize(file_get_contents($errorfile)));
+				if (filesize($errorfile))
+					$errorids = array_merge($errorids, unserialize(file_get_contents($errorfile)));
 				unlink($errorfile);
 			}
 		}
