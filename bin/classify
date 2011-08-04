@@ -77,12 +77,17 @@ if (!empty($options["classifier"])) {
 	}
 } else
 	$classifiers = allclassifiers();
+echo "using classifiers\n";
+foreach ($classifiers as $classifier)
+	echo "- " . get_class($classifier) . ": " . $classifier->getName() . "\n";
 
 // get list of files to classify
 $repo = new AFRepo();
 if (empty($options["_"])) {
+	echo "getting list of files to classify...";
 	$options["id"] = false;
 	$options["_"] = array_keys($repo->getAllFiles());
+	echo "done\n";
 } else
 	$options["output-metadata"] = true;
 
