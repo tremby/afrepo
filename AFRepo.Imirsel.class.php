@@ -130,7 +130,7 @@ abstract class ImirselAFRepoBase extends AFRepoBase {
 		}
 	}
 
-	private function getDB() {
+	protected function getDB() {
 		if (!is_null($this->db))
 			return $this->db;
 
