@@ -9,6 +9,7 @@ classifiers/*
 !classifiers/IMIRSELdbClassifier.class.php
 !classifiers/SalamiClassifier.class.php
 !classifiers/NullClassifier.class.php
+!classifiers/TagClassifier.class.php
 dbsetup.sh
 audio
 AFRepo.class.php
