@@ -65,7 +65,7 @@ if (!is_numeric($options["threads"])) {
 }
 
 // get list of classifiers to use
-if (is_array($options["classifier"])) {
+if (!empty($options["classifier"])) {
 	$classifiers = array();
 	foreach ($options["classifier"] as $classname) {
 		$classifier = getclassifier($classname);
