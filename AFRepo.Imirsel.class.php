@@ -3,22 +3,14 @@
 /**
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  *
- * AFRepo extension for the Imirsel repository
+ * Abstract AFRepo extension for the Imirsel repository
  */
 
-class AFRepo extends AFRepoBase {
+abstract class ImirselAFRepoBase extends AFRepoBase {
 	private $db;
 	private $allfiles;
 
-	public function getName() {
-		return "Imirsel audio repository";
-	}
-
-	public function getURIPrefix() {
-		return "http://imirsel.audiofiles.linkedmusic.org/";
-	}
-
-	public function getAllFiles() {
+	protected function allImirselFiles($pathfilter = null) {
 		if (!is_null($this->allfiles))
 			return $this->allfiles;
 
@@ -30,6 +22,7 @@ class AFRepo extends AFRepoBase {
 			JOIN track ON track.id=file.track_id
 			JOIN collection_track_link ON track.id=collection_track_link.track_id
 			JOIN collection ON collection.name='IMIRSEL' AND collection.id=collection_track_link.collection_id
+			" . (!is_null($pathfilter) ? "WHERE file.path LIKE '" . $db->real_escape_string($pathfilter) . "'" : "") . "
 		;");
 		if ($result === false)
 			throw new Exception($db->error);
