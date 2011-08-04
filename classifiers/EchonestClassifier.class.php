@@ -27,15 +27,23 @@ class EchonestClassifier extends AFClassifierBase {
 
 		if ($length <= 90) {
 			$query_text = $this->fingerprint($filepath);
+			if (!$query_text)
+				return false;
 			$en_response = $this->queryechonest($query_text);
 		} else {
 			$query_text = $this->fingerprint($filepath, 30, 60);
+			if (!$query_text)
+				return false;
 			$en_response = $this->queryechonest($query_text);
 			if (count($en_response["response"]["songs"]) == 0) {
 				$query_text = $this->fingerprint($filepath, 30, 120);
+				if (!$query_text)
+					return false;
 				$en_response = $this->queryechonest($query_text);
 				if (count($en_response["response"]["songs"]) == 0) {
 					$query_text = $this->fingerprint($filepath, 0, 300);
+					if (!$query_text)
+						return false;
 					$en_response = $this->queryechonest($query_text);
 				}
 			}
@@ -176,6 +184,10 @@ class EchonestClassifier extends AFClassifierBase {
 		}
 		if (isset($formed_out[0]["error"])) {
 			fwrite(STDERR, "got error message from enmfp: '" . $formed_out[0]["error"] . "'\n");
+			return false;
+		}
+		if (empty($formed_out[0]["code"])) {
+			fwrite(STDERR, "got an empty code from fingerprinter\n");
 			return false;
 		}
 
