@@ -68,8 +68,10 @@ class EchonestClassifier extends AFClassifierBase {
 				fwrite(STDERR, print_r($md["mbid_response"], true));
 				return false;
 			}
-			if (isset($md["mbid_response"]["response"]["songs"][0]["foreign_ids"]))
+			if (isset($md["mbid_response"]["response"]["songs"][0]["foreign_ids"])) {
 				$md["mbid"] = preg_replace('%^musicbrainz:song:%', "", $md["mbid_response"]["response"]["songs"][0]["foreign_ids"][0]["foreign_id"]);
+				$md["mbid_source"] = "web service request to Echonest for Musicbrainz ID of Echonest ID '" . $en_response["response"]["songs"][0]["id"] . "'");
+			}
 			if (!isset($md["mbid"]) || empty($md["mbid"])) {
 				$artist = @$md["mbid_response"]["response"]["songs"][0]["artist_name"];
 				if (!$artist)
@@ -78,6 +80,7 @@ class EchonestClassifier extends AFClassifierBase {
 				if (!$title)
 					$title = $md["en_identify_response"]["response"]["songs"][0]["title"];
 				$md["mbid"] = musicbrainzLookup($artist, $title);
+				$md["mbid_source"] = "Musicbrainz web service lookup for '$artist' -- '$title'";
 			}
 		}
 

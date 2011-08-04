@@ -44,7 +44,7 @@ class TagClassifier extends AFClassifierBase {
 		// if we don't already have it, look up a Musicbrainz ID if we can
 		if ((!isset($md["mbid"]) || empty($md["mbid"])) && isset($md["artist"]) && isset($md["title"])) {
 			$md["mbid"] = musicbrainzLookup($md["artist"], $md["title"]);
-			$md["mbid_source"] = "musicbrainz web service lookup for '$md[artist]' -- '$md[title]'";
+			$md["mbid_source"] = "Musicbrainz web service lookup for '$md[artist]' -- '$md[title]'";
 		}
 
 		return $md;
