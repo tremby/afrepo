@@ -4,14 +4,14 @@
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  */
 
-class IMIRSELdbClassifier extends AFClassifierBase {
+class ImirselDbClassifier extends AFClassifierBase {
 	private $db = null;
 
 	public function getName() {
-		return "IMIRSEL database";
+		return "Imirsel database";
 	}
 	public function getDescription() {
-		return "Pulls whatever metadata is available from the IMIRSEL database";
+		return "Pulls whatever metadata is available from the Imirsel database";
 	}
 
 	private function getDB() {

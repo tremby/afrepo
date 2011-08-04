@@ -6,7 +6,6 @@
  * Abstract AFRepo extension for the Salami repository
  */
 
-require_once "AFRepoBase.class.php";
 abstract class SalamiAFRepoBase extends AFRepoBase {
 	private $allfiles = null;
 

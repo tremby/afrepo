@@ -3,16 +3,15 @@
 /**
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  *
- * AFRepo extension for the IMIRSEL repository
+ * AFRepo extension for the Imirsel repository
  */
 
-require_once("AFRepoBase.class.php");
 class AFRepo extends AFRepoBase {
 	private $db;
 	private $allfiles;
 
 	public function getName() {
-		return "IMIRSEL audio repository";
+		return "Imirsel audio repository";
 	}
 
 	public function getURIPrefix() {
