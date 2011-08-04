@@ -86,62 +86,12 @@ if (empty($options["_"])) {
 } else
 	$options["output-metadata"] = true;
 
-// fork required number of times
-$pids = array();
-$thread = false;
-$errorfiles = array();
-for ($i = 0; $i < $options["threads"]; $i++) {
-	$errorfile = tempnam(sys_get_temp_dir(), "t$i.");
-	$errorfiles[] = $errorfile;
-	$pid = pcntl_fork();
-	if ($pid == -1) {
-		fwrite(STDERR, "could not fork\n");
-		exit(8);
-	}
-	if ($pid) {
-		// parent
-		$pids[] = $pid;
-	} else {
-		// child
-		$thread = $i;
-		break;
-	}
-}
-
-if ($thread === false) {
-	// parent -- wait for children to finish, then exit
-	$errors = false;
-	foreach ($pids as $pid) {
-		pcntl_waitpid($pid, $status);
-		if (pcntl_wexitstatus($status) > 0)
-			$errors = true;
-	}
-	echo "all threads are finished\n";
-	if ($errors) {
-		fwrite(STDERR, "at least one child exited with an error status\n");
-		// load error files
-		$errorids = array();
-		foreach ($errorfiles as $errorfile) {
-			if (file_exists($errorfile)) {
-				if (filesize($errorfile))
-					$errorids = array_merge($errorids, unserialize(file_get_contents($errorfile)));
-				unlink($errorfile);
-			}
-		}
-		$errorids = array_unique($errorids);
-		fwrite(STDERR, "errors involved the audio files with IDs\n");
-		foreach ($errorids as $errorid)
-			fwrite(STDERR, $errorid . "\n");
-		exit(1);
-	}
-	exit;
-}
-
 // loop through files
 $fcount = 0;
 $ftotal = count($options["_"]);
 $ftotalchars = strlen((string) $ftotal);
-$errorids = array();
+$errors = array();
+$children = array(); // map of child pid to array(ID, classifier)
 foreach ($options["_"] as $file) {
 	$fcount++;
 	if ($options["id"])
@@ -151,57 +101,97 @@ foreach ($options["_"] as $file) {
 
 	// loop through classifiers
 	foreach ($classifiers as $classifier) {
-		// skip if we can't get a lock
-		if (!$classifier->lock($id)) {
-			if ($options["verbose"])
-				echo "thread $thread: skipping file $id since we can't get a lock\n";
-			continue;
-		}
-
 		// position
 		$pos = "[" . sprintf("%0{$ftotalchars}d", $fcount) . "/" . $ftotal . "]";
 
-		if ($options["verbose"])
-			echo "thread $thread: working on file $id $pos, classifier " . get_class($classifier) . "\n";
+		// if we're using all threads wait for one to finish
+		if (count($children) == $options["threads"]) {
+			$pid = pcntl_wait($status);
 
-		$out = $pos . "\t";
-		if ($options["verbose"])
-			$out .= "t$thread\t";
-		$out .= ($options["canonical-paths"] ? $repo->idToCanonicalPath($id) : $id) . "\t";
-		$out .= get_class($classifier) . "\t";
+			// did it error?
+			if (pcntl_wexitstatus($status) > 0) {
+				// remember what that thread was working on
+				list($errorid, $errorclassifier) = $children[$pid];
+				if (!isset($errors[$errorid]))
+					$errors[$errorid] = array();
+				$errors[$errorid][] = $errorclassifier;
+			}
+			unset($children[$pid]);
+		}
 
-		if ($options["force-missing"] && $classifier->hasMBID($id)) {
-			$out .= $classifier->getMBID($id);
+		// fork a new thread to work on this file with this classifier
+		$pid = pcntl_fork();
+		if ($pid == -1) {
+			fwrite(STDERR, "could not fork\n");
+			exit(8);
+		}
+		if ($pid) {
+			// parent
+			$children[$pid] = array($id, $classifier);
+		} else {
+			// child
+			$pid = getmypid();
+			if ($options["verbose"])
+				echo "thread with pid $pid: working on file $id $pos, classifier " . get_class($classifier) . "\n";
+
+			$out = $pos . "\t";
+			if ($options["verbose"])
+				$out .= "pid $pid\t";
+			$out .= ($options["canonical-paths"] ? $repo->idToCanonicalPath($id) : $id) . "\t";
+			$out .= get_class($classifier) . "\t";
+
+			// skip if we're only forcing missing MBIDs and we already have one
+			if ($options["force-missing"] && $classifier->hasMBID($id)) {
+				$out .= $classifier->getMBID($id);
+				echo $out . "\n";
+				exit;
+			}
+
+			// run classifier if necessory, exit with error status if an error 
+			// happens
+			$metadata = $classifier->classify($id, $options["force-missing"] || $options["force"]);
+			if ($metadata === false) {
+				$out .= str_pad("error", 36, "-", STR_PAD_BOTH);
+				echo $out . "\n";
+				exit(1);
+			}
+
+			if ($options["output-metadata"])
+				$out .= print_r($metadata, true);
+			else {
+				$mbid = $classifier->getMBID($id);
+				if (is_null($mbid))
+					$out .= str_pad("MBID not found", 36, "-", STR_PAD_BOTH);
+				else
+					$out .= $mbid;
+			}
 			echo $out . "\n";
-			$classifier->unlock($id);
-			continue;
+			exit;
 		}
-
-		$metadata = $classifier->classify($id, $options["force-missing"] || $options["force"]);
-		if ($metadata === false) {
-			$errorids[] = $id;
-			$out .= str_pad("error", 36, "-", STR_PAD_BOTH);
-		}
-		else if ($options["output-metadata"])
-			$out .= print_r($metadata, true);
-		else {
-			$mbid = $classifier->getMBID($id);
-			if (is_null($mbid))
-				$out .= str_pad("MBID not found", 36, "-", STR_PAD_BOTH);
-			else
-				$out .= $mbid;
-		}
-
-		echo $out . "\n";
-		$classifier->unlock($id);
 	}
 }
-if ($options["verbose"])
-	echo "thread $thread: finished looping through files\n";
 
-if (count($errorids)) {
-	file_put_contents($errorfile, serialize(array_unique($errorids)));
-	exit(1);
+// wait for all threads to finish
+echo "waiting for all threads to finish...\n";
+while (count($children)) {
+	$pid = pcntl_wait($status);
+
+	// did it error?
+	if (pcntl_wexitstatus($status) > 0) {
+		// remember what that thread was working on
+		list($errorid, $errorclassifier) = $children[$pid];
+		if (!isset($errors[$errorid]))
+			$errors[$errorid] = array();
+		$errors[$errorid][] = $errorclassifier;
+	}
+	unset($children[$pid]);
+}
+
+echo "done\n";
+if (count($errors)) {
+	fwrite(STDERR, "file IDs and classifiers which had errors:\n");
+	foreach ($errors as $id => $classifiers)
+		fwrite(STDERR, "$id: " . implode(", ", array_map("get_class", $classifiers)) . "\n");
 }
 
 exit;

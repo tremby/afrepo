@@ -35,35 +35,6 @@ abstract class AFClassifierBase {
 	}
 
 	/**
-	 * getLockDirPath
-	 * Return the path of the lock directory for this classifier for the 
-	 * audiofile with the given ID
-	 */
-	public function getLockDirPath($id) {
-		$repo = new AFRepo();
-		$filepath = $repo->idToLinkPath($id);
-		return dirname($filepath) . "/." . basename($filepath) . "." . get_class($this) . ".lock";
-	}
-
-	/**
-	 * lock
-	 * Attempt to get a lock on the audiofile with the given ID for this 
-	 * classifier and return true if successful
-	 */
-	public function lock($id) {
-		return @mkdir($this->getLockDirPath($id));
-	}
-
-	/**
-	 * unlock
-	 * Release the lock on the audiofile with the given ID for this classifier
-	 */
-	public function unlock($id) {
-		if (file_exists($this->getLockDirPath($id)))
-			rmdir($this->getLockDirPath($id));
-	}
-
-	/**
 	 * hasMetadata
 	 * Return true if there is saved metadata for this classifier for the 
 	 * audiofile with the given ID
