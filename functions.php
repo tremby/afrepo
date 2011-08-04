@@ -4,32 +4,18 @@
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  */
 
-// call ffmpeg to determine track length, no matter what format it is
-// return the length in seconds
+// use getid3 to get length of audio, regardless of format
 function medialength($filepath) {
 	if (!file_exists($filepath))
 		throw new Exception("tried to get length of media file '$filepath' which doesn't exist");
-	$fd = array(
-		0 => array("pipe", "r"),
-		1 => array("pipe", "w"),
-		2 => array("pipe", "w"),
-	);
-	$ffmpeg = proc_open('ffmpeg -i ' . escapeshellarg($filepath), $fd, $pipes);
-	fclose($pipes[0]);
-	$out = stream_get_contents($pipes[1]);
-	fclose($pipes[1]);
-	$out .= stream_get_contents($pipes[2]);
-	fclose($pipes[2]);
-	$code = proc_close($ffmpeg);
 
-	if ($code != 1)
-		throw new Exception("ffmpeg exited with code $code (should be 1 since no output file is specified) when trying to determine length of file '$filepath'");
+	require_once dirname(__FILE__) . "/lib/getid3-1.9.0-20110620/getid3/getid3.php";
 
-	$matches = null;
-	if (!preg_match('%.*Duration: (..):(..):(..)\.(..).*%', $out, $matches))
-		throw new Exception("ffmpeg didn't return a duration for file '$filepath'");
+	$getID3 = new getID3();
+	$fileinfo = $getID3->analyze($filepath);
+	getid3_lib::CopyTagsToComments($fileinfo);
 
-	return floatVal($matches[4] / 100) + intVal($matches[3]) + intVal($matches[2]) * 60 + intVal($matches[1]) * 60 * 60;
+	return $fileinfo["playtime_seconds"];
 }
 
 // look up an artist and title to find a Musicbrainz ID
