@@ -24,6 +24,14 @@ abstract class AFClassifierBase {
 	abstract public function getDescription();
 
 	/**
+	 * available
+	 * Return true if the classifier is available for use
+	 */
+	public function available() {
+		return true;
+	}
+
+	/**
 	 * getDataPath
 	 * Return the path of the file where this classifier saves its data for the 
 	 * audiofile with the given ID
@@ -124,7 +132,9 @@ function allclassifiers() {
 	foreach (glob(dirname(__FILE__) . "/*Classifier.class.php") as $file) {
 		$classname = basename($file, ".class.php");
 		include $file;
-		$classifiers[$classname] = new $classname;
+		$classifier = new $classname;
+		if ($classifier->available())
+			$classifiers[$classname] = $classifier;
 	}
 	return $classifiers;
 }
@@ -137,7 +147,11 @@ function getclassifier($classname) {
 	if (!file_exists($file))
 		return false;
 	require_once $file;
-	return new $classname;
+	$classifier = new $classname;
+	if ($classifier->available())
+		return $classifier;
+	trigger_error("trying to load a classifier which exists but currently declares itself as unavailable", E_USER_WARNING);
+	return false;
 }
 
 ?>

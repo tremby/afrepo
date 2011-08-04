@@ -13,6 +13,12 @@ class SalamiClassifier extends AFClassifierBase {
 	public function getDescription() {
 		return "Pulls any metadata available from Salami metadata CSV file";
 	}
+	public function available() {
+		if (!class_exists("SalamiAFRepoBase"))
+			return false;
+		$repo = new AFRepo();
+		return is_a($repo, "SalamiAFRepoBase");
+	}
 
 	// return a rewound file handler
 	protected function getFH() {

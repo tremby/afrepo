@@ -13,6 +13,12 @@ class ImirselDbClassifier extends AFClassifierBase {
 	public function getDescription() {
 		return "Pulls whatever metadata is available from the Imirsel database";
 	}
+	public function available() {
+		if (!class_exists("ImirselAFRepoBase"))
+			return false;
+		$repo = new AFRepo();
+		return is_a($repo, "ImirselAFRepoBase");
+	}
 
 	private function getDB() {
 		if (!is_null($this->db))
