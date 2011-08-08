@@ -65,14 +65,21 @@ class EchonestClassifier extends AFClassifierBase {
 		// if there are no songs, we can't look for a MBID
 		if (!empty($en_response["response"]["songs"])) {
 			$md["mbid_response"] = $this->queryForMBID($en_response["response"]["songs"][0]["id"]);
-			if ($md["mbid_response"]["response"]["status"]["message"] != "Success") {
-				fwrite(STDERR, "got non-success message '" . $md["mbid_response"]["response"]["status"]["message"] . "'\n");
-				fwrite(STDERR, print_r($md["mbid_response"], true));
-				return false;
-			}
-			if (isset($md["mbid_response"]["response"]["songs"][0]["foreign_ids"])) {
-				$md["mbid"] = preg_replace('%^musicbrainz:song:%', "", $md["mbid_response"]["response"]["songs"][0]["foreign_ids"][0]["foreign_id"]);
-				$md["mbid_source"] = "web service request to Echonest for Musicbrainz ID of Echonest ID '" . $en_response["response"]["songs"][0]["id"] . "'";
+			if (preg_match("%^The Identifier specified does not exist%", $md["mbid_response"]["response"]["status"]["message"])) {
+				// we get this error sometimes even though we've just given back 
+				// the identifier Echonest told us. do a manual lookup in a 
+				// moment.
+			} else {
+				if ($md["mbid_response"]["response"]["status"]["message"] != "Success") {
+					fwrite(STDERR, "got non-success message '" . $md["mbid_response"]["response"]["status"]["message"] . "'\n");
+					fwrite(STDERR, print_r($en_response, true));
+					fwrite(STDERR, print_r($md["mbid_response"], true));
+					return false;
+				}
+				if (isset($md["mbid_response"]["response"]["songs"][0]["foreign_ids"])) {
+					$md["mbid"] = preg_replace('%^musicbrainz:song:%', "", $md["mbid_response"]["response"]["songs"][0]["foreign_ids"][0]["foreign_id"]);
+					$md["mbid_source"] = "web service request to Echonest for Musicbrainz ID of Echonest ID '" . $en_response["response"]["songs"][0]["id"] . "'";
+				}
 			}
 			if (!isset($md["mbid"]) || empty($md["mbid"])) {
 				$artist = @$md["mbid_response"]["response"]["songs"][0]["artist_name"];
@@ -114,7 +121,6 @@ class EchonestClassifier extends AFClassifierBase {
 		$error_output = stream_get_contents($pipes[2]);
 		fclose($pipes[2]);
 		$returncode = proc_close($enmfp_proc);
-
 
 		/*
 		// TODO: detect if it aborted and then try normalizing the track with 
@@ -182,6 +188,10 @@ class EchonestClassifier extends AFClassifierBase {
 				}
 		 */
 
+		if ($returncode != 1) {
+			// fingerprinter seems to return 1 for success (and some errors)
+			fwrite(STDERR, "enmfp exited with code $returncode\n");
+		}
 		$formed_out = json_decode($query_text, true);
 		if (!empty($error_output) || is_null($formed_out) || !isset($formed_out[0])) {
 			fwrite(STDERR, "unexpected output from enmfp: '$query_text'\nerror output: '$error_output'\n");
