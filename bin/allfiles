@@ -42,25 +42,17 @@ if (count($options["_"]) != 0) {
 
 $repo = new AFRepo();
 try {
-	$allfiles = $repo->getAllFiles();
+	if ($options["preferred-only"])
+		$allfiles = $repo->getAllPreferredFiles();
+	else
+		$allfiles = $repo->getAllFiles();
 } catch (Exception $e) {
 	fwrite(STDERR, $e->getMessage() . "\n");
 	exit(1);
 }
 
-if ($options["preferred-only"]) {
-	foreach (array_keys($allfiles) as $file) {
-		try {
-			if ($file == $repo->getPreferredFile($repo->filePathToId($file)))
-				echo $file . "\n";
-		} catch (Exception $e) {
-			fwrite(STDERR, $e->getMessage() . "\n");
-			exit(2);
-		}
-	}
-} else
-	foreach (array_keys($allfiles) as $file)
-		echo $file . "\n";
+foreach (array_keys($allfiles) as $file)
+	echo $file . "\n";
 
 exit;
 

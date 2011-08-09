@@ -40,6 +40,18 @@ abstract class AFRepoBase {
 	abstract public function getAllFiles();
 
 	/**
+	 * getAllPreferredFiles
+	 * Get a backwards array containing canonical pathnames for every preferred 
+	 * file in the repository (that is, the best version of each song)
+	 */
+	public function getAllPreferredFiles() {
+		$preferred = array();
+		foreach (array_keys($this->getAllFiles()) as $file)
+			$preferred[$this->getPreferredFile($this->filePathToId($file))] = true;
+		return $preferred;
+	}
+
+	/**
 	 * inRepo
 	 * Return true if the audiofile with the given path (canonical or symlink) 
 	 * is in the repository or false if not
