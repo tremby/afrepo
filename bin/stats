@@ -1,0 +1,124 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "percentages", null, CliOption::TYPE_SWITCH, "Show percentages instead of numbers");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options]\n");
+	fwrite($stream, "Produce some statistics from the classifiers' output\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// complain about any non-option arguments
+if (!empty($options["_"])) {
+	fwrite(STDERR, "unexpected arguments\n\n");
+	usage();
+}
+
+// get list of all audiofiles
+$repo = new AFRepo();
+$allfiles = $repo->getAllFiles();
+$preferredfiles = $repo->getAllPreferredFiles();
+
+// get all classifiers
+$classifiers = allclassifiers();
+
+// initialize vars
+$perclassifierdata = array();
+foreach ($classifiers as $classifier) {
+	$perclassifierdata[] = array(
+		"classifier" => $classifier,
+		"hasmetadata" => 0,
+		"hasmbid" => 0,
+	);
+}
+$mbidcount = array(0 => 0);
+
+// loop through audiofiles
+foreach (array_keys($allfiles) as $file) {
+	$id = $repo->filePathToId($file);
+
+	$mbids = array();
+
+	// loop through classifiers
+	foreach ($perclassifierdata as &$datum) {
+		if ($datum["classifier"]->hasMetadata($id))
+			$datum["hasmetadata"]++;
+		if ($datum["classifier"]->hasMBID($id)) {
+			$datum["hasmbid"]++;
+			$mbids[] = $datum["classifier"]->getMBID($id);
+		}
+	}
+	unset($datum);
+
+	$uniquembids = array_unique($mbids);
+
+	// count the number of mbids
+	@$mbidcount[count($uniquembids)]++;
+}
+
+// sort mbidcount array by key
+ksort($mbidcount);
+
+// total number of audiofiles with more than one MBID
+$multiplembidcount = 0;
+foreach ($mbidcount as $c => $n)
+	if ($c > 1)
+		$multiplembidcount += $n;
+
+echo count($allfiles) . " audiofiles in repository\n";
+echo count($preferredfiles) . " audiofiles in repository without including clips, different encodings etc\n";
+echo "\n";
+echo numorpercent($mbidcount[0], count($allfiles)) . " audiofiles do not have MBIDs\n";
+echo numorpercent($mbidcount[1], count($allfiles)) . " audiofiles were classified with a single MBID\n";
+echo numorpercent($mbidcount[1] + $multiplembidcount, count($allfiles)) . " audiofiles were classified with at least one MBID\n";
+echo numorpercent($multiplembidcount, count($allfiles)) . " audiofiles were classified with different MBIDs by different classifiers\n";
+foreach ($mbidcount as $c => $n)
+	if ($c > 1)
+		echo "\t" . numorpercent($n, count($allfiles)) . " with $c different MBIDs\n";
+echo "\n";
+echo "Classifiers:\n";
+foreach ($perclassifierdata as $datum) {
+	echo "\t" . $datum["classifier"]->getName() . "\n";
+	echo "\t\t" . numorpercent($datum["hasmetadata"], count($allfiles)) . " files have saved metadata (classifier finished)\n";
+	echo "\t\t" . numorpercent($datum["hasmbid"], count($allfiles)) . " files have MBIDs (classified)\n";
+}
+
+exit;
+
+function numorpercent($num, $total) {
+	global $options;
+	if ($options["percentages"]) {
+		if ($total == 0)
+			return "INF";
+		return sprintf("%.2f%%", 100 * $num / $total);
+	}
+	return $num . " of " . $total;
+}
+
+?>
