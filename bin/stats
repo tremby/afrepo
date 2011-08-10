@@ -12,6 +12,7 @@ require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
 $opts = new CliOptions();
 $opts->add(null, "help");
 $opts->add(null, "percentages", null, CliOption::TYPE_SWITCH, "Show percentages instead of numbers");
+$opts->add(null, "progress", null, CliOption::TYPE_SWITCH, "Show progress on stderr");
 
 function usage($code = 255) {
 	global $opts;
@@ -42,7 +43,11 @@ if (!empty($options["_"])) {
 
 // get list of all audiofiles
 $repo = new AFRepo();
+if ($options["progress"])
+	fwrite(STDERR, "getting list of all audiofiles\n");
 $allfiles = $repo->getAllFiles();
+if ($options["progress"])
+	fwrite(STDERR, "getting list of all preferred audiofiles\n");
 $preferredfiles = $repo->getAllPreferredFiles();
 
 // get all classifiers
@@ -60,7 +65,27 @@ foreach ($classifiers as $classifier) {
 $mbidcount = array(0 => 0);
 
 // loop through audiofiles
+if ($options["progress"]) {
+	fwrite(STDERR, "looping through audiofiles\n");
+	$progress_length = 60;
+	fwrite(STDERR, "[" . str_repeat(" ", $progress_length) . "]");
+	$i = 0;
+	$count = count($allfiles);
+	$oldequals = -1;
+}
 foreach (array_keys($allfiles) as $file) {
+	// tick progress
+	if ($options["progress"]) {
+		$i++;
+		$equals = round($progress_length * $i / $count) - 1;
+		if ($equals < 0)
+			$equals = 0;
+		if ($equals != $oldequals) {
+			fwrite(STDERR, "\r[" . str_repeat("=", $equals) . ">" . str_repeat(" ", $progress_length - $equals - 1) . "]");
+			$oldequals = $equals;
+		}
+	}
+
 	$id = $repo->filePathToId($file);
 
 	$mbids = array();
