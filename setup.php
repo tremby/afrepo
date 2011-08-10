@@ -7,4 +7,8 @@ require_once "functions.php";
 
 ini_set("memory_limit", "256M");
 
+$ns = array(
+	"mo" => "http://purl.org/ontology/mo/",
+);
+
 ?>

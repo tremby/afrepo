@@ -1,0 +1,148 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+require dirname(dirname(__FILE__)) . "/lib/arc2/ARC2.php";
+require dirname(dirname(__FILE__)) . "/lib/Graphite/graphite/Graphite.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "classifier", CliOption::TYPE_MULTIPLEVALUE, null, "Use the given classifier rather than using all classifiers. Can be used more than once to pick multiple classifiers.");
+$opts->add(null, "output-metadata", CliOption::TYPE_SWITCH, null, "Output all metadata classifiers have saved");
+$opts->add(null, "id", CliOption::TYPE_SWITCH, null, "Interpret argument as ID rather than path");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] <filepath>\n");
+	fwrite($stream, "Output information about the given audiofile.\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// complain if not exactly one non-option argument
+if (count($options["_"]) != 1) {
+	fwrite(STDERR, "Expected exactly one non-option argument\n\n");
+	usage();
+}
+
+// get list of classifiers to use
+if (!empty($options["classifier"])) {
+	$classifiers = array();
+	foreach ($options["classifier"] as $classname) {
+		$classifier = getclassifier($classname);
+		if ($classifier === false) {
+			fwrite(STDERR, "classifier '" . $options["classifier"] . "' doesn't exist\n");
+			exit(255);
+		}
+		$classifiers[] = $classifier;
+	}
+} else
+	$classifiers = allclassifiers();
+
+$repo = new AFRepo();
+
+if ($options["id"])
+	$id = $options["_"][0];
+else
+	$id = $repo->filePathToId($options["_"][0]);
+
+echo "Audiofile\n";
+echo "\tid: " . $id . "\n";
+echo "\tsymlink: " . $repo->idToLinkPath($id) . "\n";
+echo "\tcanonical: " . $repo->idToCanonicalPath($id) . "\n";
+if ($repo->filePathToId($repo->getPreferredFile($id)) == $id)
+	echo "\tthis is the preferred file for this song\n";
+else
+	echo "\tthis is not the preferred file for this song\n";
+echo "\taudiofiles for this song: " . count($repo->getSongFiles($id)) . "\n";
+foreach ($repo->getSongFiles($id) as $othersong)
+	echo "\t\t" . $repo->filePathToId($othersong) . "\n";
+
+
+echo "\n";
+echo "Classifiers\n";
+
+$mbids = array();
+
+ob_start();
+foreach ($classifiers as $classifier) {
+	echo "\t" . $classifier->getName() . "\n";
+	if (!$classifier->hasMetadata($id)) {
+		echo "\t\tno metadata -- classifier has not successfully been run\n";
+		continue;
+	}
+	echo "\t\tclassifier has been run\n";
+	if ($classifier->hasMBID($id)) {
+		echo "\t\tMBID: " . $classifier->getMBID($id) . "\n";
+		$mbids[] = $classifier->getMBID($id);
+		if ($classifier->hasProvenance($id))
+			echo "\t\tProvenance information: " . $classifier->getProvenance($id) . "\n";
+		else
+			echo "\t\tProvenance information: [none available]\n";
+	} else
+		echo "\t\tMBID: [none found]\n";
+	if ($options["output-metadata"]) {
+		echo "\t\tfull metadata: ";
+		print_r($classifier->loadMetadata($id));
+	}
+}
+$out = ob_get_clean();
+
+echo "\t" . count($mbids) . " classifiers found MBIDs for this audiofile\n";
+$uniquembids = array_unique($mbids);
+echo "\t" . count($uniquembids) . " unique MBIDs\n";
+"\n";
+echo $out;
+
+echo "\n";
+echo "Musicbrainz\n";
+foreach ($uniquembids as $mbid) {
+	$tmp = array();
+	foreach ($classifiers as $classifier)
+		if ($classifier->getMBID($id) == $mbid)
+			$tmp[] = $classifier->getName();
+	echo "\t$mbid (asserted by " . implode(", ", $tmp) . ")\n";
+	$graph = new Graphite($GLOBALS["ns"]);
+	$artistgraph = new Graphite($GLOBALS["ns"]);
+	$document = $graph->resource("http://musicbrainz.org/recording/$mbid");
+	$document->load();
+	$signal = $document->get("-foaf:isPrimaryTopicOf");
+	$artist = $signal->get("foaf:maker");
+	$artist = $artistgraph->resource($artist);
+	$artist->load();
+	echo "\t\tartist: " . $artist->get("foaf:name") . "\n";
+	echo "\t\ttitle: " . $signal->get("dct:title") . "\n";
+	echo "\t\tduration: " . $signal->get("mo:duration") . "\n";
+	echo "\t\treleases:\n";
+	foreach ($graph->allOfType("mo:Release") as $release) {
+		echo "\t\t\t" . $release->uri . "\n";
+		echo "\t\t\t\ttitle: " . $release->get("dct:title") . "\n";
+		echo "\t\t\t\tdate: " . $release->get("mo:release_event")->get("dct:date") . "\n";
+		echo "\t\t\t\tpublished at: " . $release->get("mo:publishing_location") . "\n";
+		echo "\t\t\t\tcatalogue number: " . $release->get("mo:catalogue_number") . "\n";
+		echo "\t\t\t\tsong appears at track: " . $release->get("mo:track")->get("mo:track_number") . "\n";
+	}
+}
+
+exit;
+
+?>
