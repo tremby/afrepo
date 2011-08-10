@@ -94,6 +94,9 @@ abstract class AFClassifierBase {
 	 * The Musicbrainz ID should be looked up with artist and title information 
 	 * if necessary (possibly using the musicbrainzLookup() function).
 	 *
+	 * It is recommended to also save a string corresponding to the key 
+	 * "mbid_source", providing provenance information for the Musicbrainz ID.
+	 *
 	 * If the Musicbrainz ID can't be found, the value can be null or the key 
 	 * can be missing altogether.
 	 *
@@ -122,6 +125,30 @@ abstract class AFClassifierBase {
 		$metadata = $this->classify($id);
 		if (isset($metadata["mbid"]) && !empty($metadata["mbid"]))
 			return $metadata["mbid"];
+		return null;
+	}
+
+	/**
+	 * hasProvenance
+	 * Return true if this classifier has stored provenance information 
+	 * regarding the MBID found for the audiofile with the given ID
+	 */
+	public function hasProvenance($id) {
+		if (!$this->hasMBID($id))
+			return false;
+		$provenance = $this->getProvenance($id);
+		return !is_null($provenance);
+	}
+
+	/**
+	 * getProvenance
+	 * Return the provenance information regarding the MBID found for the 
+	 * audiofile with the given ID
+	 */
+	public function getProvenance($id) {
+		$metadata = $this->classify($id);
+		if (isset($metadata["mbid_source"]) && !empty($metadata["mbid_source"]))
+			return $metadata["mbid_source"];
 		return null;
 	}
 }
