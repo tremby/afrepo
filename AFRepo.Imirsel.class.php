@@ -7,17 +7,21 @@
  */
 
 abstract class ImirselAFRepoBase extends AFRepoBase {
-	private $db;
-	private $allfiles;
+	private $db = null;
+	private $allfiles = null;
+	private $preferredfiles = null;
 
-	protected function allImirselFiles($pathfilter = null) {
+	abstract protected function getPathFilter();
+
+	public function getAllFiles() {
 		if (!is_null($this->allfiles))
 			return $this->allfiles;
 
 		$db = $this->getDB();
+		$pathfilter = $this->getPathFilter();
 
 		$result = $db->query("
-			SELECT file.path
+			SELECT file.path, file.track_id
 			FROM file
 			JOIN track ON track.id=file.track_id
 			JOIN collection_track_link ON track.id=collection_track_link.track_id
@@ -29,9 +33,21 @@ abstract class ImirselAFRepoBase extends AFRepoBase {
 
 		$this->allfiles = array();
 		while ($row = $result->fetch_assoc())
-			$this->allfiles[$row["path"]] = true;
+			$this->allfiles[$row["path"]] = $row["track_id"];
 
 		return $this->allfiles;
+	}
+
+	public function getAllPreferredFiles() {
+		if (!is_null($this->preferredfiles))
+			return $this->preferredfiles;
+
+		$one_file_per_track = array_flip($this->getAllFiles());
+		$preferredfiles = array();
+		foreach ($one_file_per_track as $filepath)
+			$preferredfiles[] = $this->getPreferredFile($this->filePathToId($filepath));
+
+		return $this->preferredfiles = array_flip($preferredfiles);
 	}
 
 	public function getSongFiles($id) {

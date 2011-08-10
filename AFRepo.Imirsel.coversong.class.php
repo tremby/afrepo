@@ -14,7 +14,7 @@ class AFRepo extends ImirselAFRepoBase {
 	public function getURIPrefix() {
 		return "http://coversong.imirsel.audiofiles.linkedmusic.org/";
 	}
-	public function getAllFiles() {
-		return $this->allImirselFiles("%/c/%");
+	public function getPathFilter() {
+		return "%/c/%";
 	}
 }
