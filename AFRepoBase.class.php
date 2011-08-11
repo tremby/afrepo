@@ -192,9 +192,12 @@ abstract class AFRepoBase {
 	 * getRDFPath
 	 * Return the path on disk of the RDF representation of the audiofile with 
 	 * the given ID
+	 *
+	 * Note that there is only one RDF representation per song -- that is, many 
+	 * audiofiles may share an RDF representation.
 	 */
 	protected function getRDFPath($id) {
-		return dirname(__FILE__) . "/rdf/" . self::splitId($id) . ".xml";
+		return dirname(__FILE__) . "/rdf/" . self::splitId($this->getPreferredId($id)) . ".xml";
 	}
 
 	/**
