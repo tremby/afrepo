@@ -151,6 +151,17 @@ abstract class AFClassifierBase {
 			return $metadata["mbid_source"];
 		return null;
 	}
+
+	/**
+	 * getLastMetadataChange
+	 * Return the timestamp of the last time the metadata changed for the 
+	 * audiofile with the given ID
+	 */
+	public function getLastMetadataChange($id) {
+		if (!$this->hasMetadata($id))
+			return false;
+		return filemtime($this->getDataPath($id));
+	}
 }
 
 ?>

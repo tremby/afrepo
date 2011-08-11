@@ -11,6 +11,8 @@
  */
 
 abstract class AFRepoBase {
+	const LAST_RDF_STRUCTURE_CHANGE = "2011-08-11 20:27:00 BST";
+
 	/**
 	 * getName
 	 * Return the name of the audiofile repository
@@ -184,6 +186,197 @@ abstract class AFRepoBase {
 	 */
 	public function filePathToLinkPath($filepath) {
 		return $this->idToLinkPath($this->filePathToId($filepath));
+	}
+
+	/**
+	 * getRDFPath
+	 * Return the path on disk of the RDF representation of the audiofile with 
+	 * the given ID
+	 */
+	protected function getRDFPath($id) {
+		return dirname(__FILE__) . "/rdf/" . self::splitId($id) . ".xml";
+	}
+
+	/**
+	 * getRDF
+	 * Return the RDF for the audiofile with the given ID in the given format
+	 *
+	 * The RDF is generated first if necessary.
+	 */
+	public function getRDF($id, $format = "RDFXML", $force = false) {
+		if ($force
+			|| !file_exists($this->getRDFPath($id))
+			|| filemtime($this->getRDFPath($id)) < strtotime(self::LAST_RDF_STRUCTURE_CHANGE)
+			|| filemtime($this->getRDFPath($id)) < $this->getLastMetadataChange($id)
+		)
+			$this->generateRDF($id);
+
+		if ($format == "RDFXML")
+			// return existing RDF
+			return file_get_contents($this->getRDFPath($id));
+
+		// convert saved RDF to the required format
+		require_once dirname(__FILE__) . "/lib/arc2/ARC2.php";
+
+		$parser = ARC2::getRDFParser();
+		$parser->parse($this->getURIPrefix(), file_get_contents($this->getRDFPath($id)));
+		$serializer = ARC2::getSer($format);
+		return $serializer->getSerializedTriples($parser->getTriples());
+	}
+
+	/**
+	 * generateRDF
+	 * Generate and save RDF for the audiofile with the given ID
+	 */
+	protected function generateRDF($id) {
+		$files = $this->getSongFiles($id);
+		$ids = array_map(array($this, "filePathToId"), $files);
+
+		$mbid = $this->getMBID($id);
+
+		$triples = array();
+
+		// loop through the audiofiles for this tune
+		foreach ($ids as $key => $fileid) {
+			// some identifiers
+			$audiofile = "repo:$fileid";
+			$digitalsignal = "repo:$fileid#DigitalSignal";
+
+			// this is a mo:AudioFile, which is a mo:MusicalItem
+			$triples[] = "$audiofile a mo:AudioFile";
+
+			// this encodes a corresponding mo:DigitalSignal (which is a 
+			// subclass of mo:Signal, which is a subclass of 
+			// mo:MusicalExpression)
+			$triples[] = "$audiofile mo:encodes $digitalsignal";
+
+			// different logic depending whether this audiofile is the preferred 
+			// one or not
+			if ($key == 0) {
+				// preferred -- if we have an MBID this Signal is derived from 
+				// the original (that at Musicbrainz)
+				if (!is_null($mbid))
+					$triples[] = "$digitalsignal mo:derived_from " . mbidToSignalURI($mbid);
+				// otherwise we don't assert that it derives from anything
+			} else {
+				// non-preferred -- we assert that it is derived from our 
+				// preferred audiofile's Signal
+				$triples[] = "$digitalsignal mo:derived_from repo:$id#DigitalSignal";
+			}
+
+			// analyze the file, get some metadata
+			$filemetadata = $this->getFileMetadata($fileid);
+
+			// mo:AudioFile metadata
+			if (isset($filemetadata["dataformat"]))
+				$triples[] = "$audiofile mo:encoding \"" . $filemetadata["dataformat"] . (isset($filemetadata["bitrate"]) ? " @ " . $filemetadata["bitrate"] . "bps" : "") . (isset($filemetadata["bitrate_mode"]) ? " " . $filemetadata["bitrate_mode"] : "") . "\"";
+
+			// mo:DigitalSignal metadata
+			if (isset($filemetadata["playtime_seconds"]))
+				$triples[] = "$digitalsignal mo:time [ a time:Interval; time:seconds \"" . $filemetadata["playtime_seconds"] . "\"^^xsd:float ]";
+			if (isset($filemetadata["channels"]))
+				$triples[] = "$digitalsignal mo:channels \"" . $filemetadata["channels"] . "\"^^xsd:int";
+			if (isset($filemetadata["sample_rate"]))
+				$triples[] = "$digitalsignal mo:sample_rate \"" . $filemetadata["sample_rate"] . "\"^^xsd:float";
+
+		}
+
+		// load Arc and Graphite
+		require_once dirname(__FILE__) . "/lib/arc2/ARC2.php";
+		require_once dirname(__FILE__) . "/lib/Graphite/graphite/Graphite.php";
+		$graph = new Graphite($GLOBALS["ns"]);
+
+		// turn those triples into Turtle
+		$ttl = "";
+		foreach ($GLOBALS["ns"] as $short => $long)
+			$ttl .= "@prefix $short: <$long> .\n";
+		foreach ($triples as $triple)
+			$ttl .= $triple . " .\n";
+
+		// have Arc parse them and give any errors
+		$parser = ARC2::getTurtleParser();
+		$parser->parse($this->getURIPrefix(), $ttl);
+		$errors = $parser->getErrors();
+		if (!empty($errors))
+			throw new Exception("arc couldn't parse the generated Turtle. errors:\n\t- " . implode("\n\t- ", $errors) . "\nturtle:\n" . $turtle);
+
+		$serializer = ARC2::getRDFXMLSerializer(array("ns" => $GLOBALS["ns"]));
+		$rdfxml = $serializer->getSerializedTriples($parser->getTriples());
+		if (substr($rdfxml, -1) != "\n")
+			$rdfxml .= "\n";
+
+		$rdfpath = $this->getRDFPath($id);
+		if (!is_dir(dirname($rdfpath)))
+			mkdir(dirname($rdfpath));
+		if (!file_put_contents($rdfpath, $rdfxml))
+			throw new Exception("couldn't save RDFXML to '$rdfpath'");
+
+		return $rdfxml;
+	}
+
+	/**
+	 * getMBID
+	 * Get the preferred MBID for the audiofile with the given ID according to 
+	 * the classifiers which have been run
+	 *
+	 * Return null if no MBID is available.
+	 *
+	 * By default this method has a built-in order of preference of classifiers 
+	 * -- this should almost certainly be overridden in implementations.
+	 */
+	public function getMBID($id) {
+		$classifiers = array(
+			new TagClassifier(),
+			new EchonestClassifier(),
+			new ImirselDbClassifier(),
+			new SalamiClassifier(),
+		);
+		foreach ($classifiers as $classifier)
+			if ($classifier->available() && $classifier->hasMBID($id))
+				return $classifier->getMBID($id);
+		return null;
+	}
+
+	/**
+	 * getFileMetadata
+	 * Analyze the audiofile with the given ID to return an array with some 
+	 * information about its encoding
+	 */
+	public function getFileMetadata($id) {
+		require_once dirname(__FILE__) . "/lib/getid3-1.9.0-20110620/getid3/getid3.php";
+		$getID3 = new getID3();
+		$fileinfo = $getID3->analyze($this->idToCanonicalPath($id));
+		$md = array();
+		if (isset($fileinfo["audio"]["dataformat"]))
+			$md["dataformat"] = $fileinfo["audio"]["dataformat"];
+		if (isset($fileinfo["audio"]["channels"]))
+			$md["channels"] = $fileinfo["audio"]["channels"];
+		if (isset($fileinfo["audio"]["sample_rate"]))
+			$md["sample_rate"] = $fileinfo["audio"]["sample_rate"];
+		if (isset($fileinfo["audio"]["bitrate"]))
+			$md["bitrate"] = $fileinfo["audio"]["bitrate"];
+		if (isset($fileinfo["audio"]["bitrate_mode"]))
+			$md["bitrate_mode"] = $fileinfo["audio"]["bitrate_mode"];
+		if (isset($fileinfo["audio"]["channelmode"]))
+			$md["channelmode"] = $fileinfo["audio"]["channelmode"];
+		if (isset($fileinfo["playtime_seconds"]))
+			$md["playtime_seconds"] = $fileinfo["playtime_seconds"];
+		return $md;
+	}
+
+	/**
+	 * getLastMetadataChange
+	 * Return the timestamp of the last time the metadata changed for any 
+	 * classifier for the audiofile with the given ID
+	 */
+	public function getLastMetadataChange($id) {
+		$lastchange = -1;
+		foreach (allclassifiers() as $classifier)
+			if ($classifier->hasMetadata($id))
+				$lastchange = max($lastchange, $classifier->getLastMetadataChange($id));
+		if ($lastchange == -1)
+			return false;
+		return $lastchange;
 	}
 }
 

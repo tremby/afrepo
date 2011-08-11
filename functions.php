@@ -127,4 +127,9 @@ function getclassifier($classname) {
 	return false;
 }
 
+// return a Musicbrainz mo:Signal URI for a given Musicbrainz "recording" ID
+function mbidToSignalURI($mbid) {
+	return "mbz:recording/$mbid#_";
+}
+
 ?>
