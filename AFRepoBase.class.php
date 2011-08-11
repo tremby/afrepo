@@ -11,7 +11,7 @@
  */
 
 abstract class AFRepoBase {
-	const LAST_RDF_STRUCTURE_CHANGE = "2011-08-11 20:27:00 BST";
+	const LAST_RDF_STRUCTURE_CHANGE = "2011-08-11 21:08 BST";
 
 	/**
 	 * getName
@@ -251,10 +251,12 @@ abstract class AFRepoBase {
 			// this is a mo:AudioFile, which is a mo:MusicalItem
 			$triples[] = "$audiofile a mo:AudioFile";
 
-			// this encodes a corresponding mo:DigitalSignal (which is a 
-			// subclass of mo:Signal, which is a subclass of 
-			// mo:MusicalExpression)
+			// this encodes a corresponding digital signal
 			$triples[] = "$audiofile mo:encodes $digitalsignal";
+
+			// our digital signal is a mo:DigitalSignal (which is a subclass of 
+			// mo:Signal, which is a subclass of mo:MusicalExpression)
+			$triples[] = "$digitalsignal a mo:DigitalSignal";
 
 			// different logic depending whether this audiofile is the preferred 
 			// one or not
