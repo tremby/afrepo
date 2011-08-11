@@ -261,7 +261,7 @@ abstract class AFRepoBase {
 			} else {
 				// non-preferred -- we assert that it is derived from our 
 				// preferred audiofile's Signal
-				$triples[] = "$digitalsignal mo:derived_from repo:$id#DigitalSignal";
+				$triples[] = "$digitalsignal mo:derived_from repo:" . $ids[0] . "#DigitalSignal";
 			}
 
 			// analyze the file, get some metadata
@@ -305,7 +305,7 @@ abstract class AFRepoBase {
 		if (substr($rdfxml, -1) != "\n")
 			$rdfxml .= "\n";
 
-		$rdfpath = $this->getRDFPath($id);
+		$rdfpath = $this->getRDFPath($ids[0]);
 		if (!is_dir(dirname($rdfpath)))
 			mkdir(dirname($rdfpath));
 		if (!file_put_contents($rdfpath, $rdfxml))
