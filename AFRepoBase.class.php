@@ -151,7 +151,7 @@ abstract class AFRepoBase {
 
 	/**
 	 * idToLinkPath
-	 * Return the path to the symlink of the audio file with the given ID
+	 * Return the path to the symlink of the audiofile with the given ID
 	 */
 	public function idToLinkPath($id) {
 		return $this->getAudioPath() . "/" . self::splitId($id);
@@ -179,7 +179,7 @@ abstract class AFRepoBase {
 
 	/**
 	 * filePathToLinkPath
-	 * Return the path to the symlink of the given audio file (which could be a 
+	 * Return the path to the symlink of the given audiofile (which could be a 
 	 * symlink or canonical)
 	 */
 	public function filePathToLinkPath($filepath) {
