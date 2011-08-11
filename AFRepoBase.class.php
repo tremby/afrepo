@@ -224,7 +224,10 @@ abstract class AFRepoBase {
 		$parser = ARC2::getRDFParser();
 		$parser->parse($this->getURIPrefix(), file_get_contents($this->getRDFPath($id)));
 		$serializer = ARC2::getSer($format, array("ns" => $GLOBALS["ns"]));
-		return $serializer->getSerializedTriples($parser->getTriples());
+		$rdf = $serializer->getSerializedTriples($parser->getTriples());
+		if (substr($rdf, -1) != "\n")
+			$rdf .= "\n";
+		return $rdf;
 	}
 
 	/**
