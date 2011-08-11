@@ -272,11 +272,17 @@ abstract class AFRepoBase {
 
 			// mo:AudioFile metadata
 			if (isset($filemetadata["dataformat"]))
-				$triples[] = "$audiofile mo:encoding \"" . $filemetadata["dataformat"] . (isset($filemetadata["bitrate"]) ? " @ " . $filemetadata["bitrate"] . "bps" : "") . (isset($filemetadata["bitrate_mode"]) ? " " . $filemetadata["bitrate_mode"] : "") . "\"";
+				$triples[] = "$audiofile mo:encoding \"" . $filemetadata["dataformat"]
+						. (isset($filemetadata["bitrate"]) ? " @ " . $filemetadata["bitrate"] . "bps" : "")
+						. (isset($filemetadata["bitrate_mode"]) ? " " . $filemetadata["bitrate_mode"] : "")
+						. "\"";
 
 			// mo:DigitalSignal metadata
 			if (isset($filemetadata["playtime_seconds"]))
-				$triples[] = "$digitalsignal mo:time [ a time:Interval; time:seconds \"" . $filemetadata["playtime_seconds"] . "\"^^xsd:float ]";
+				$triples[] = "$digitalsignal mo:time [ "
+						. "a time:Interval; "
+						. "time:seconds \"" . $filemetadata["playtime_seconds"] . "\"^^xsd:float "
+						. "]";
 			if (isset($filemetadata["channels"]))
 				$triples[] = "$digitalsignal mo:channels \"" . $filemetadata["channels"] . "\"^^xsd:int";
 			if (isset($filemetadata["sample_rate"]))
@@ -301,7 +307,9 @@ abstract class AFRepoBase {
 		$parser->parse($this->getURIPrefix(), $ttl);
 		$errors = $parser->getErrors();
 		if (!empty($errors))
-			throw new Exception("arc couldn't parse the generated Turtle. errors:\n\t- " . implode("\n\t- ", $errors) . "\nturtle:\n" . $turtle);
+			throw new Exception("arc couldn't parse the generated Turtle. errors:\n"
+					. "\t- " . implode("\n\t- ", $errors) . "\n"
+					. "turtle:\n" . $turtle);
 
 		$serializer = ARC2::getRDFXMLSerializer(array("ns" => $GLOBALS["ns"]));
 		$rdfxml = $serializer->getSerializedTriples($parser->getTriples());
