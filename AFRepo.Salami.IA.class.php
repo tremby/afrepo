@@ -6,7 +6,6 @@
  * AFRepo extension for the Salami IA repository
  */
 
-require_once "AFRepo.Salami.class.php";
 class AFRepo extends SalamiAFRepoBase {
 	public function getName() {
 		return "Salami IA";

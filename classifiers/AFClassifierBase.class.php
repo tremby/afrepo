@@ -153,32 +153,4 @@ abstract class AFClassifierBase {
 	}
 }
 
-// return an array of all classifiers, indexed by class name
-function allclassifiers() {
-	$classifiers = array();
-	foreach (glob(dirname(__FILE__) . "/*Classifier.class.php") as $file) {
-		$classname = basename($file, ".class.php");
-		include $file;
-		$classifier = new $classname;
-		if ($classifier->available())
-			$classifiers[$classname] = $classifier;
-	}
-	return $classifiers;
-}
-
-// return a particular classifier or false
-function getclassifier($classname) {
-	if (!preg_match('%Classifier$%', $classname))
-		trigger_error("trying to load a classifier which is not named according to convention", E_USER_WARNING);
-	$file = dirname(__FILE__) . "/$classname.class.php";
-	if (!file_exists($file))
-		return false;
-	require_once $file;
-	$classifier = new $classname;
-	if ($classifier->available())
-		return $classifier;
-	trigger_error("trying to load a classifier which exists but currently declares itself as unavailable", E_USER_WARNING);
-	return false;
-}
-
 ?>

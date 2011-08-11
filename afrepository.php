@@ -4,7 +4,6 @@
 
 require_once "lib/arc2/ARC2.php";
 require_once "lib/Graphite/graphite/Graphite.php";
-require_once "AFRepo.class.php";
 
 define("RDF_DIR", dirname(__FILE__) . "/rdf");
 

@@ -6,7 +6,6 @@
  * AFRepo extension for the Imirsel coversong repository
  */
 
-require_once "AFRepo.Imirsel.class.php";
 class AFRepo extends ImirselAFRepoBase {
 	public function getName() {
 		return "Imirsel coversong";

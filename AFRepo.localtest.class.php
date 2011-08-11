@@ -10,7 +10,6 @@
  * PathClassifier classifier can get meanining from it.
  */
 
-require_once("AFRepoBase.class.php");
 class AFRepo extends AFRepoBase {
 	private $db;
 	private $allfiles;

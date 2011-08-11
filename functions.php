@@ -102,4 +102,29 @@ if (!function_exists("sys_get_temp_dir")) {
 	}
 }
 
+// return an array of all classifiers, indexed by class name
+function allclassifiers() {
+	$classifiers = array();
+	foreach (glob(dirname(__FILE__) . "/classifiers/*Classifier.class.php") as $file) {
+		$classname = basename($file, ".class.php");
+		$classifier = new $classname;
+		if ($classifier->available())
+			$classifiers[$classname] = $classifier;
+	}
+	return $classifiers;
+}
+
+// return a particular classifier or false
+function getclassifier($classname) {
+	if (!preg_match('%Classifier$%', $classname))
+		trigger_error("trying to load a classifier which is not named according to convention", E_USER_WARNING);
+	if (!class_exists($classname))
+		return false;
+	$classifier = new $classname;
+	if ($classifier->available())
+		return $classifier;
+	trigger_error("trying to load a classifier which exists but currently declares itself as unavailable", E_USER_WARNING);
+	return false;
+}
+
 ?>
