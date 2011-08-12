@@ -132,4 +132,137 @@ function mbidToSignalURI($mbid) {
 	return "mbz:recording/$mbid#_";
 }
 
+// exit with various statuses
+function notfound($message = "not found\n", $mimetype = "text/plain") {
+	header("Content-Type: $mimetype", true, 404);
+	echo $message;
+	exit;
+}
+function badrequest($message = "bad request\n", $mimetype = "text/plain") {
+	header("Content-Type: $mimetype", true, 400);
+	echo $message;
+	exit;
+}
+function notacceptable($message = "not acceptable\n", $mimetype = "text/plain") {
+	header("Content-Type: $mimetype", true, 406);
+	echo $message;
+	exit;
+}
+function multiplechoices($location = null, $message = "multiple choices -- be specific about what you accept\n", $mimetype = "text/plain") {
+	header("Content-Type: $mimetype", true, 300);
+	if (!is_null($location))
+		header("Location: $location");
+	echo $message;
+	exit;
+}
+function notauthorized($realm = null, $message = "unauthorized\n") {
+	if (is_null($realm)) {
+		header("Content-Type: text/plain", true, 403);
+		echo $message;
+		exit;
+	}
+	header("Content-Type: text/plain", true, 401);
+	header("WWW-Authenticate: Basic realm=\"$realm\"");
+	echo $message;
+	exit;
+}
+
+// redirect to another URL
+function redirect($destination = null, $code = 301) {
+	$names = array(
+		301 => "Moved Permanently",
+		302 => "Found",
+		303 => "See Other",
+	);
+
+	// redirect to current URI by default
+	if (is_null($destination))
+		$destination = $_SERVER["REQUEST_URI"];
+
+	// HTTP spec says location has to be absolute
+	if ($destination[0] == "/")
+		// absolute path on this host
+		$destination = ($_SERVER["SERVER_PORT"] == 443 ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . $destination;
+	else if (parse_url($destination, PHP_URL_SCHEME) === null)
+		// relative path on this host
+		$destination = ($_SERVER["SERVER_PORT"] = 443 ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]) . "/" . $destination;
+
+	header("Location: " . $destination, true, $code);
+
+	// give some HTML or plain text advising the user of the new URL should 
+	// their user agent not redirect automatically
+	switch (preferredtype(array("text/plain", "text/html"))) {
+		case "text/html":
+			header("Content-Type: text/html");
+			?>
+			<h1><?php echo htmlspecialchars($names[$code]); ?></h1>
+			<a href="<?php echo htmlspecialchars($destination); ?>">Redirect to <?php echo htmlspecialchars($destination); ?></a>
+			<?php
+			break;
+		case "text/plain":
+		default:
+			header("Content-Type: text/plain");
+			echo $names[$code] . "\n";
+			echo $destination . "\n";
+			break;
+	}
+	exit;
+}
+
+// return the user agent's preferred accepted type, given a list of available 
+// types. or return true if there is no preference or false if no available type 
+// is acceptable
+function preferredtype($types = array("text/html")) {
+	$acceptstring = strtolower(@$_SERVER["HTTP_ACCEPT"]);
+
+	// if there's no accept string that's equivalent to */* -- no preference
+	if (empty($acceptstring))
+		return true;
+
+	// build an array of mimetype to score, sort it descending
+	$atscores = array();
+	$accept = preg_split("/\s*,\s*/", $acceptstring);
+	foreach ($accept as $part) {
+		if (strpos($part, ";") !== false) {
+			$type = explode(";", $part);
+			$score = explode("=", $type[1]);
+			$atscores[$type[0]] = $score[1];
+		} else
+			$atscores[$part] = 1;
+	}
+	arsort($atscores);
+
+	// return the first match of accepted to offered, if any
+	foreach ($atscores as $wantedtype => $score)
+		if (in_array($wantedtype, $types))
+			return $wantedtype;
+
+	// no specific type accepted is offered -- look for type/*
+	$allsubtypesof = array();
+	foreach ($atscores as $wantedtype => $score) {
+		$typeparts = explode("/", $wantedtype);
+		if ($typeparts[1] == "*")
+			$allsubtypesof[$typeparts[0]] = $score;
+	}
+	arsort($allsubtypesof);
+
+	// match against offered types
+	foreach ($allsubtypesof as $accepted => $score)
+		foreach ($types as $offered)
+			if (preg_replace('%(.*)/.*$%', '\1', $offered) == $accepted)
+				return $offered;
+
+	// if they accept */*, return true (no preference)
+	if (in_array("*/*", array_keys($atscores)))
+		return true;
+
+	// return false -- we don't offer any accepted type
+	return false;
+}
+
+// issue a Last-Modified header in the correct format, given a timestamp
+function lastmodified($timestamp) {
+	header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $timestamp));
+}
+
 ?>

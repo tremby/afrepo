@@ -206,7 +206,7 @@ abstract class AFRepoBase {
 	 * Note that there is only one RDF representation per song -- that is, many 
 	 * audiofiles may share an RDF representation.
 	 */
-	protected function getRDFPath($id) {
+	public function getRDFPath($id) {
 		return dirname(__FILE__) . "/rdf/" . self::splitId($this->getPreferredId($id)) . ".xml";
 	}
 
@@ -387,6 +387,15 @@ abstract class AFRepoBase {
 			$md["channelmode"] = $fileinfo["audio"]["channelmode"];
 		if (isset($fileinfo["playtime_seconds"]))
 			$md["playtime_seconds"] = $fileinfo["playtime_seconds"];
+		if (isset($fileinfo["mime_type"])) {
+			// replace application/ogg with audio/ogg -- application/ogg is the 
+			// official one but audio/ogg is also common and in my opinion is 
+			// better suited. on top of that it allows people to ask for audio/* 
+			// and get any audio format we provide.
+			if ($fileinfo["mime_type"] == "application/ogg")
+				$fileinfo["mime_type"] = "audio/ogg";
+			$md["mime_type"] = $fileinfo["mime_type"];
+		}
 		return $md;
 	}
 
