@@ -54,17 +54,28 @@ abstract class AFRepoBase {
 	}
 
 	/**
-	 * inRepo
+	 * fileInRepo
 	 * Return true if the audiofile with the given path (canonical or symlink) 
 	 * is in the repository or false if not
 	 */
-	public function inRepo($filepath) {
+	public function fileInRepo($filepath) {
 		$realpath = realpath($filepath);
 		if ($realpath === false) {
 			trigger_error("file '$filepath' does not exist on disk or is a broken symlink", E_USER_WARNING);
 			return false;
 		}
 		return array_key_exists($realpath, $this->getAllFiles());
+	}
+
+	/**
+	 * inRepo
+	 * Return true if the audiofile with the given ID is in the repository or 
+	 * false if not
+	 *
+	 * Note that this assumes all symlinks have been made.
+	 */
+	public function inRepo($id) {
+		return file_exists($this->idToLinkPath($id));
 	}
 
 	/**
@@ -90,10 +101,9 @@ abstract class AFRepoBase {
 	 * and this method must be overridden if that is not the case.
 	 */
 	public function getSongFiles($id) {
-		$filepath = $this->idToLinkPath($id);
-		if (!$this->inRepo($filepath))
+		if (!$this->inRepo($id))
 			return array();
-		return array(realpath($filepath));
+		return array($this->idToCanonicalPath($id));
 	}
 
 	/**
@@ -173,7 +183,7 @@ abstract class AFRepoBase {
 	 * canonical or a symlink)
 	 */
 	public function filePathToId($filepath) {
-		if (!$this->inRepo($filepath))
+		if (!$this->fileInRepo($filepath))
 			throw new Exception("file with path '$filepath' is not in the repository");
 		$id = md5(realpath($filepath));
 		return $id;
