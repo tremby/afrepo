@@ -99,7 +99,7 @@ if ($preferredtype == "text/html") {
 
 	// load graph
 	$graph = new Graphite($ns);
-	$graph->load($repo->getURIPrefix() . $id);
+	$graph->addRDFXML($repo->getURIPrefix(), $repo->getRDF($id));
 
 	ob_start();
 	?>
