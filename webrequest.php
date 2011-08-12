@@ -56,6 +56,7 @@ else
 $preferredtype = preferredtype($types);
 
 // choose what to do based on that preferred type
+header("Vary: Accept");
 
 // no preference
 if ($preferredtype === true)
@@ -69,7 +70,6 @@ if ($preferredtype === false)
 if (in_array($preferredtype, array_keys($rdftypes))) {
 	// an RDF type -- Arc handles this
 	$output = $repo->getRDF($id, $rdftypes[$preferredtype]);
-	header("Vary: Accept");
 	header("Content-Type: $preferredtype; charset=utf-8");
 	header("Content-Length: " . strlen($output));
 	lastmodified(filemtime($repo->getRDFPath($id)));
@@ -110,7 +110,6 @@ if ($preferredtype == "text/html") {
 </html>
 <?php
 	$output = ob_get_clean();
-	header("Vary: Accept");
 	header("Content-Type: $preferredtype; charset=utf-8");
 	header("Content-Length: " . strlen($output));
 	lastmodified(filemtime($repo->getRDFPath($id)));
@@ -120,7 +119,6 @@ if ($preferredtype == "text/html") {
 
 // audio
 if (preg_match('%^audio/%', $preferredtype)) {
-	header("Vary: Accept");
 	header("Content-Type: $preferredtype");
 	header("Content-Length: " . filesize($repo->idToCanonicalPath($id)));
 	lastmodified(filemtime($repo->idToCanonicalPath($id)));
