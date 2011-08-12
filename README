@@ -9,7 +9,9 @@ can be accessed over HTTP.
 
 INSTALLATION AND SETUP
 
-1.	Clone the git repository to somewhere Apache can see it
+1.	Clone the git repository to somewhere Apache can see it. Apache needs to be 
+	set up with mod_rewrite enabled and .htaccess overriding allowed (or you 
+	could put the rewrite rule in your main Apache configuration).
 2.	Pull in the dependencies:
 		$ git submodule init
 		$ git submodule update
