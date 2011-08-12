@@ -16,6 +16,7 @@ $ns = array(
 	"time" => "http://www.w3.org/2006/time#",
 	"repo" => $repo->getURIPrefix(),
 	"mbz" => "http://musicbrainz.org/",
+	"foaf" => "http://xmlns.com/foaf/0.1/",
 );
 
 function __autoload($classname) {

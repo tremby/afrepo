@@ -1,2 +1,2 @@
 RewriteEngine on
-RewriteRule ^[0-9a-f]{32}$ webrequest.php
+RewriteRule ^[0-9a-f]{32}_?$ webrequest.php

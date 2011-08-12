@@ -24,10 +24,11 @@ $base = parse_url($repo->getURIPrefix());
 $basepath = $base["path"];
 
 // check the request URI is the expected form
-if (!preg_match('%^' . preg_quote($basepath, "%") . '[0-9a-f]{32}$%', $_SERVER["REQUEST_URI"]))
-	notfound("Not found. Expected a request URI ending in the audiofile ID.");
+if (!preg_match('%^' . preg_quote($basepath, "%") . '[0-9a-f]{32}_?$%', $_SERVER["REQUEST_URI"]))
+	notfound("Not found. Expected a request URI ending in the audiofile ID and optionally an underscore (to denote the information resource).");
 
-$id = substr($_SERVER["REQUEST_URI"], strlen($basepath));
+$id = preg_replace('%.*/([0-9a-f]{32})_?$%', '\1', $_SERVER["REQUEST_URI"]);
+$ir = substr($_SERVER["REQUEST_URI"], -1) == "_";
 
 if (!$repo->inRepo($id))
 	notfound("Not found. Given ID '$id' does not exist in the repository");
@@ -68,7 +69,10 @@ if ($preferredtype === false)
 
 // an RDF type
 if (in_array($preferredtype, array_keys($rdftypes))) {
-	// an RDF type -- Arc handles this
+	// if we're at the NIR URI, redirect to IR URI
+	if (!$ir)
+		redirect($repo->getURIPrefix() . $id . "_", 303);
+
 	$output = $repo->getRDF($id, $rdftypes[$preferredtype]);
 	header("Content-Type: $preferredtype; charset=utf-8");
 	header("Content-Length: " . strlen($output));
@@ -79,6 +83,9 @@ if (in_array($preferredtype, array_keys($rdftypes))) {
 
 // HTML
 if ($preferredtype == "text/html") {
+	// if we're at the NIR URI, redirect to IR URI
+	if (!$ir)
+		redirect($repo->getURIPrefix() . $id . "_", 303);
 	// load Graphite
 	require_once "lib/arc2/ARC2.php";
 	require_once "lib/Graphite/graphite/Graphite.php";
@@ -119,6 +126,10 @@ if ($preferredtype == "text/html") {
 
 // audio
 if (preg_match('%^audio/%', $preferredtype)) {
+	// if we're at the IR URI, redirect to NIR URI
+	if ($ir)
+		redirect($repo->getURIPrefix() . $id, 303);
+
 	header("Content-Type: $preferredtype");
 	header("Content-Length: " . filesize($repo->idToCanonicalPath($id)));
 	lastmodified(filemtime($repo->idToCanonicalPath($id)));

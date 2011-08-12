@@ -11,7 +11,7 @@
  */
 
 abstract class AFRepoBase {
-	const LAST_RDF_STRUCTURE_CHANGE = "2011-08-11 21:08 BST";
+	const LAST_RDF_STRUCTURE_CHANGE = "2011-08-12 21:00 BST";
 
 	/**
 	 * getName
@@ -257,6 +257,9 @@ abstract class AFRepoBase {
 			// some identifiers
 			$audiofile = "repo:$fileid";
 			$digitalsignal = "repo:$fileid#DigitalSignal";
+
+			// triples about the document
+			$triples[] = "{$audiofile}_ a foaf:Document; foaf:primaryTopic $audiofile";
 
 			// this is a mo:AudioFile, which is a mo:MusicalItem
 			$triples[] = "$audiofile a mo:AudioFile";
