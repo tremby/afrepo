@@ -2,6 +2,7 @@ afrepo
 
 Bart Nagel <bjn@ecs.soton.ac.uk>
 For the Nema project at the University of Southampton
+Probably GPL. Contact me to confirm.
 
 From a set of audiofiles, build a linked data driven audiofile repository which 
 can be accessed over HTTP.
