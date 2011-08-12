@@ -19,14 +19,18 @@ else if (REQUIRE_TLS) {
 if (REQUIRE_CLIENT_CERTIFICATE && (!isset($_SERVER["SSL_CLIENT_VERIFY"]) || $_SERVER["SSL_CLIENT_VERIFY"] != "SUCCESS"))
 	notauthorized(null, "client certificate required but a valid one was not given\n");
 
-// check the request URI is the expected form
-if (!preg_match('%^/[0-9a-f]{32}$%', $_SERVER["REQUEST_URI"]))
-	notfound();
+// get base path
+$base = parse_url($repo->getURIPrefix());
+$basepath = $base["path"];
 
-$id = substr($_SERVER["REQUEST_URI"], 1);
+// check the request URI is the expected form
+if (!preg_match('%^' . preg_quote($basepath, "%") . '[0-9a-f]{32}$%', $_SERVER["REQUEST_URI"]))
+	notfound("Not found. Expected a request URI ending in the audiofile ID.");
+
+$id = substr($_SERVER["REQUEST_URI"], strlen($basepath));
 
 if (!$repo->inRepo($id))
-	notfound();
+	notfound("Not found. Given ID '$id' does not exist in the repository");
 
 // accepted extensions to their mimetypes
 $rdftypes = array(
