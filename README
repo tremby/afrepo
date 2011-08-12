@@ -1,0 +1,106 @@
+afrepo
+
+Bart Nagel <bjn@ecs.soton.ac.uk>
+For the Nema project at the University of Southampton
+
+From a set of audiofiles, build a linked data driven audiofile repository which 
+can be accessed over HTTP.
+
+INSTALLATION AND SETUP
+
+1.	Clone the git repository to somewhere Apache can see it
+2.	Pull in the dependencies:
+		$ git submodule init
+		$ git submodule update
+3.	Write a new PHP file AFRepo.class.php extending AFRepoBase.
+	This class dictates the canonical paths to the audiofiles in your 
+	repository. It also dictates sets of audiofiles which are the same song (for 
+	instance clips, different encodings and so on) and which of those is the 
+	preferred version. You can put any logic you like in here (database lookups 
+	for instance).
+	See AFrepo.*.class.php for examples -- these are the extensions I have 
+	written for various existing implementations of afrepo and are otherwise 
+	unused.
+4.	Optionally write some new classifier classes in the classifiers subdirectory 
+	extending from AFClassifier. See the existing ones for examples. Note that 
+	some of the existing ones only apply to my particular implementations of 
+	afrepo and so are only provided as examples.
+5.	Generate symlinks to the audiofiles:
+		$ bin/makelinks
+
+At this point your afrepo should be working but of limited use since no 
+audiofiles have been classified.
+
+6.	Run some classifiers over your audiofiles:
+		$ bin/classify
+	That will run all available classifiers on all songs. See its usage message 
+	for how to do things such as list the available classifiers, run only 
+	particular classifiers, classify only particular audiofiles or force 
+	classification even if the classifier has already been run for that file:
+		$ bin/classify --help
+
+If Musicbrainz IDs were found for one or more audiofiles the RDF will now show 
+them.
+
+RETRIEVING INFORMATION FROM THE COMMANDLINE
+
+To get RDF for a particular file from the commandline:
+	$ bin/rdf path_of_audio_file
+or
+	$ bin/rdf --id id_of_audio_file
+The --format switch can be used to get that in a different format Arc supports:
+	$ bin/rdf --format Turtle path_of_audio_file
+
+To see information about a particular audiofile (including looking up any MBIDs 
+with which it has been classified in order to see the artist, title and so on 
+according to Musicbrainz) use the fileinfo script:
+	$ bin/fileinfo path_of_audio_file
+
+To see statistics about the audiofile repository (classifier hit rate and so on) 
+use the stats script:
+	$ bin/stats
+This can be slow for large repositories, particularly if they use database 
+lookups. Its --progress switch is handy in these cases.
+
+Note that usage instructions and lists of options for all scripts in the bin 
+subdirectory are available by giving each the --help argument:
+	$ bin/allfiles --help
+
+USING THE REPOSITORY
+
+For basic usage instructions navigate to the afrepo directory with your browser. 
+All representations for a given audiofile are found at the same URI using 
+content negotiation, perhaps with a "303 See Also" redirection to the 
+information resource. For instance, assuming the afrepo directory is available 
+at
+	http://localtest.localhost/repo1/
+(this is the string returned by the getURIPrefix method of your AFRepo class), 
+the audiofile with the ID 0123456789abcdef0123456789abcdef can be found at
+	http://localtest.localhost/repo1/0123456789abcdef0123456789abcdef
+
+Depending on the Accept header sent by your browser you will get different 
+responses. With web browsers (which generally have text/html pretty high up in 
+the preference list) you'll be redirected with a 303 code to the information 
+resource URI (the same with a trailing underscore) and will then get the HTML 
+representation. To get the RDF in Turtle format you could try
+	$ curl -LH "Accept: text/turtle" 
+	http://localtest.localhost/repo1/0123456789abcdef0123456789abcdef
+(the -L flag is required to follow the redirection) or to listen to the audio 
+you could try
+	$ mplayer http://localtest.localhost/repo1/0123456789abcdef0123456789abcdef
+(which with current versions of mplayer will fail since it doesn't send an 
+Accept header and so receives a "300 Multiple Choices" response, but I've 
+submitted a patch for that).
+
+TODO
+
+-	Support triplestores
+-	Have a switch for bin/rdf which will generate RDF for all audiofiles 
+	(intended to then add them to the triplestore)
+-	An interactive (possibly web based, possibly text mode) classifier to choose 
+	between the various classifications which have been made or manually 
+	intervene if no MBIDs were found or none of them are correct/acceptable.
+-	Support the HTTP Range header to return partial audio
+-	Configurable access control, probably just IP address range whitelisting 
+	initially (in the mean time this can be implemented by configuring Apache as 
+	required)
