@@ -3,6 +3,8 @@
 require_once "functions.php";
 
 ini_set("memory_limit", "256M");
+ini_set("log_errors", true);
+ini_set("error_log", "error_log");
 
 $repo = new AFRepo();
 $ns = array(
