@@ -104,6 +104,3 @@ TODO
 	between the various classifications which have been made or manually 
 	intervene if no MBIDs were found or none of them are correct/acceptable.
 -	Support the HTTP Range header to return partial audio
--	Configurable access control, probably just IP address range whitelisting 
-	initially (in the mean time this can be implemented by configuring Apache as 
-	required)
