@@ -66,6 +66,14 @@ class AFRepo extends AFRepoBase {
 			return array($origfilepath, $clippath);
 		return array($origfilepath);
 	}
+
+	public function haveMetadataPermission() {
+		return true;
+	}
+
+	public function haveAudioPermission() {
+		return ipInRange($_SERVER["REMOTE_ADDR"], "127.0.0.0/8");
+	}
 }
 
 ?>

@@ -19,6 +19,10 @@ else if (REQUIRE_TLS) {
 if (REQUIRE_CLIENT_CERTIFICATE && (!isset($_SERVER["SSL_CLIENT_VERIFY"]) || $_SERVER["SSL_CLIENT_VERIFY"] != "SUCCESS"))
 	notauthorized(null, "client certificate required but a valid one was not given\n");
 
+// fail if client doesn't have any permissions
+if (!$repo->haveMetadataPermission() && !$repo->haveAudioPermission())
+	notauthorized();
+
 // get base path
 $base = parse_url($repo->getURIPrefix());
 $basepath = $base["path"];
@@ -74,6 +78,29 @@ if ($preferredtype === true)
 if ($preferredtype === false)
 	notacceptable("Not acceptable -- none of the types you accept are available. Available types:\n- " . implode("\n- ", $types) . "\n");
 
+// audio
+if (preg_match('%^audio/%', $preferredtype)) {
+	// if we're at the infodoc URI, something has gone wrong -- audio shouldn't be 
+	// available there
+	if ($infodoc)
+		servererror("infodoc URI requested but with audio as preferred mime type");
+
+	// check client has audio permission
+	if (!$repo->haveAudioPermission())
+		notauthorized();
+
+	header("Content-Type: $preferredtype");
+	header("Content-Length: " . filesize($repo->idToCanonicalPath($id)));
+	lastmodified(filemtime($repo->idToCanonicalPath($id)));
+	header("Content-Transfer-Encoding: binary");
+	readfile($repo->idToCanonicalPath($id));
+	exit;
+}
+
+// check client has metadata permission
+if (!$repo->haveMetadataPermission())
+	notauthorized();
+
 // an RDF type
 if (in_array($preferredtype, array_keys($rdftypes))) {
 	// if we're at the Audiofile URI, redirect to infodoc URI
@@ -93,6 +120,7 @@ if ($preferredtype == "text/html") {
 	// if we're at the Audiofile URI, redirect to infodoc URI
 	if (!$infodoc)
 		redirect($repo->getURIPrefix() . $id . "_", 303);
+
 	// load Graphite
 	require_once "lib/arc2/ARC2.php";
 	require_once "lib/Graphite/graphite/Graphite.php";
@@ -136,21 +164,6 @@ if ($preferredtype == "text/html") {
 	header("Content-Length: " . strlen($output));
 	lastmodified(filemtime($repo->getRDFPath($id)));
 	echo $output;
-	exit;
-}
-
-// audio
-if (preg_match('%^audio/%', $preferredtype)) {
-	// if we're at the infodoc URI, something has gone wrong -- audio shouldn't be 
-	// available there
-	if ($infodoc)
-		servererror("infodoc URI requested but with audio as preferred mime type");
-
-	header("Content-Type: $preferredtype");
-	header("Content-Length: " . filesize($repo->idToCanonicalPath($id)));
-	lastmodified(filemtime($repo->idToCanonicalPath($id)));
-	header("Content-Transfer-Encoding: binary");
-	readfile($repo->idToCanonicalPath($id));
 	exit;
 }
 

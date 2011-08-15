@@ -265,4 +265,45 @@ function lastmodified($timestamp) {
 	header("Last-Modified: " . gmdate('D, d M Y H:i:s \G\M\T', $timestamp));
 }
 
+// return true if a given IP address is in the given range
+// accepts
+// - plain dotted IP address
+// - integer IP address
+// - CIDR range (128.222.70.0/16 etc)
+// - array of any of the above
+function ipInRange($needle, $haystack) {
+	// recurse if we have an array
+	if (is_array($haystack)) {
+		foreach ($haystack as $h)
+			if (ipInRange($needle, $h))
+				return true;
+		return false;
+	}
+
+	// turn needle into an integer IP address
+	if (is_string($needle))
+		$needle = ip2long($needle);
+
+	// integer
+	if (is_long($haystack))
+		return $needle == $haystack;
+
+	// plain IP address
+	if (preg_match('%^[0-9.]+$%', $haystack))
+		return $needle == ip2long($haystack);
+
+	// CIDR
+	trigger_error("haystack is $haystack", E_USER_NOTICE);
+	if (preg_match('%^[0-9.]+/\d+$%', $haystack)) {
+		list ($net, $mask) = split("/", $haystack);
+		$ip_net = ip2long($net);
+		$ip_mask = ~((1 << (32 - $mask)) - 1);
+
+		$ip_ip_net = $needle & $ip_mask;
+		return $ip_ip_net == $ip_net;
+	}
+
+	throw new Exception("haystack in unexpected format");
+}
+
 ?>

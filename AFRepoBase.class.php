@@ -416,6 +416,18 @@ abstract class AFRepoBase {
 			return false;
 		return $lastchange;
 	}
+
+	/**
+	 * haveMetadataPermission
+	 * Return true if the client has permission to get at the metadata
+	 */
+	abstract public function haveMetadataPermission();
+
+	/**
+	 * haveAudioPermission
+	 * Return true if the client has permission to get at the audio
+	 */
+	abstract public function haveAudioPermission();
 }
 
 ?>

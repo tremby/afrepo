@@ -159,6 +159,18 @@ abstract class ImirselAFRepoBase extends AFRepoBase {
 			throw new Exception("failed to connect to database: " . $error);
 		return $this->db;
 	}
+
+	public function haveMetadataPermission() {
+		return true;
+	}
+
+	public function haveAudioPermission() {
+		return ipInRange($_SERVER["REMOTE_ADDR"], array(
+			"127.0.0.0/8",
+			"128.174.154.74", //nema
+			"128.174.154.86", //nema-dev
+		));
+	}
 }
 
 ?>
