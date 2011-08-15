@@ -30,6 +30,7 @@ abstract class SalamiAFRepoBase extends AFRepoBase {
 	public function haveAudioPermission() {
 		return ipInRange($_SERVER["REMOTE_ADDR"], array(
 			"127.0.0.0/8",
+			"152.78.0.0/16", //soton
 			"128.174.154.74", //nema
 			"128.174.154.86", //nema-dev
 		));
