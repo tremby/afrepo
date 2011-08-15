@@ -11,7 +11,6 @@
  */
 
 class AFRepo extends AFRepoBase {
-	private $db;
 	private $allfiles;
 
 	public function getName() {
