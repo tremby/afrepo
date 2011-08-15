@@ -293,7 +293,6 @@ function ipInRange($needle, $haystack) {
 		return $needle == ip2long($haystack);
 
 	// CIDR
-	trigger_error("haystack is $haystack", E_USER_NOTICE);
 	if (preg_match('%^[0-9.]+/\d+$%', $haystack)) {
 		list ($net, $mask) = split("/", $haystack);
 		$ip_net = ip2long($net);
