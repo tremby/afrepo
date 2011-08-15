@@ -25,10 +25,10 @@ $basepath = $base["path"];
 
 // check the request URI is the expected form
 if (!preg_match('%^' . preg_quote($basepath, "%") . '[0-9a-f]{32}_?$%', $_SERVER["REQUEST_URI"]))
-	notfound("Not found. Expected a request URI ending in the audiofile ID and optionally an underscore (to denote the information resource).");
+	notfound("Not found. Expected a request URI ending in the audiofile ID and optionally an underscore (to denote the infodoc resource).");
 
 $id = preg_replace('%.*/([0-9a-f]{32})_?$%', '\1', $_SERVER["REQUEST_URI"]);
-$ir = substr($_SERVER["REQUEST_URI"], -1) == "_";
+$infodoc = substr($_SERVER["REQUEST_URI"], -1) == "_";
 
 if (!$repo->inRepo($id))
 	notfound("Not found. Given ID '$id' does not exist in the repository");
@@ -51,9 +51,9 @@ $md = $repo->getFileMetadata($id);
 if (isset($md["mime_type"]))
 	$audio_mimetype = $md["mime_type"];
 
-// if they've asked for the non-information resource, the audio is available, 
+// if they've asked for the Audiofile resource, the audio is available, 
 // otherwise it isn't (we don't have a recording of the RDF document!)
-if (!$ir) {
+if (!$infodoc) {
 	if (!is_null($audio_mimetype))
 		$types[] = $audio_mimetype;
 	else
@@ -76,8 +76,8 @@ if ($preferredtype === false)
 
 // an RDF type
 if (in_array($preferredtype, array_keys($rdftypes))) {
-	// if we're at the NIR URI, redirect to IR URI
-	if (!$ir)
+	// if we're at the Audiofile URI, redirect to infodoc URI
+	if (!$infodoc)
 		redirect($repo->getURIPrefix() . $id . "_", 303);
 
 	$output = $repo->getRDF($id, $rdftypes[$preferredtype]);
@@ -90,8 +90,8 @@ if (in_array($preferredtype, array_keys($rdftypes))) {
 
 // HTML
 if ($preferredtype == "text/html") {
-	// if we're at the NIR URI, redirect to IR URI
-	if (!$ir)
+	// if we're at the Audiofile URI, redirect to infodoc URI
+	if (!$infodoc)
 		redirect($repo->getURIPrefix() . $id . "_", 303);
 	// load Graphite
 	require_once "lib/arc2/ARC2.php";
@@ -111,17 +111,21 @@ if ($preferredtype == "text/html") {
 	</head>
 	<body>
 		<h1><?php echo htmlspecialchars($repo->getName()); ?>: audiofile <code><?php echo htmlspecialchars($id); ?></h1>
-		<p>You have this HTML representation because according to your 
+		<p>You have this HTML info document because according to your 
 		<code>Accept</code> header it is your preferred format of those offered. 
-		The available formats for this document are</p>
+		The available formats for this info document are</p>
 		<ul>
 			<?php foreach ($types as $type) { ?>
 				<li><code><?php echo htmlspecialchars($type); ?></code></li>
 			<?php } ?>
 		</ul>
 		<?php if (!is_null($audio_mimetype)) { ?>
-			<p>The <a href="<?php echo $repo->getURIPrefix() . $id; ?>">non-information resource</a> 
-			is additionally available as <code><?php echo htmlspecialchars($audio_mimetype); ?></code>.</p>
+			<p>The <a href="<?php echo $repo->getURIPrefix() . $id; ?>">Audiofile resource</a> 
+			(which you may have been redirected from) is additionally available 
+			as</p>
+			<ul>
+				<li><code><?php echo htmlspecialchars($audio_mimetype); ?></code></li>
+			</ul>
 		<?php } ?>
 		<?php echo $graph->dump(array("label" => true, "labeluris" => true, "internallinks" => true)); ?>
 	</body>
@@ -137,10 +141,10 @@ if ($preferredtype == "text/html") {
 
 // audio
 if (preg_match('%^audio/%', $preferredtype)) {
-	// if we're at the IR URI, something has gone wrong -- audio shouldn't be 
+	// if we're at the infodoc URI, something has gone wrong -- audio shouldn't be 
 	// available there
-	if ($ir)
-		servererror("IR URI requested but with audio as preferred mime type");
+	if ($infodoc)
+		servererror("infodoc URI requested but with audio as preferred mime type");
 
 	header("Content-Type: $preferredtype");
 	header("Content-Length: " . filesize($repo->idToCanonicalPath($id)));
