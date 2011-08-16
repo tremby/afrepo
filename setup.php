@@ -1,10 +1,15 @@
 <?php
 
-require_once "functions.php";
+$cli = php_sapi_name() == "cli";
 
 ini_set("memory_limit", "256M");
-ini_set("log_errors", true);
-ini_set("error_log", "error_log");
+
+ini_set("display_errors", $cli);
+ini_set("log_errors", !$cli);
+if (!$cli)
+	ini_set("error_log", "error_log");
+
+require_once "functions.php";
 
 $repo = new AFRepo();
 $ns = array(
