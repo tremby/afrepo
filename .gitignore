@@ -11,6 +11,7 @@ classifiers/*
 !classifiers/NullClassifier.class.php
 !classifiers/TagClassifier.class.php
 !classifiers/PathClassifier.class.php
+!classifiers/JamendoClassifier.class.php
 dbsetup.sh
 audio
 AFRepo.class.php
