@@ -305,13 +305,10 @@ abstract class AFRepoBase {
 				$triples[] = "$digitalsignal mo:channels \"" . $filemetadata["channels"] . "\"^^xsd:int";
 			if (isset($filemetadata["sample_rate"]))
 				$triples[] = "$digitalsignal mo:sample_rate \"" . $filemetadata["sample_rate"] . "\"^^xsd:float";
-
 		}
 
-		// load Arc and Graphite
+		// load Arc
 		require_once dirname(__FILE__) . "/lib/arc2/ARC2.php";
-		require_once dirname(__FILE__) . "/lib/Graphite/graphite/Graphite.php";
-		$graph = new Graphite($GLOBALS["ns"]);
 
 		// turn those triples into Turtle
 		$ttl = "";
