@@ -56,8 +56,11 @@ function musicbrainzLookup($artist, $title, $limit = 1, &$fullresponse = null) {
 	}
 
 	$mbids = array();
-	foreach ($xml->{"recording-list"}->recording as $recording)
-		$mbids[] = (string) $recording["id"];
+	if (!is_array($xml->{"recording-list"}->recording))
+		$mbids[] = (string) $xml->{"recording-list"}->recording["id"];
+	else
+		foreach ($xml->{"recording-list"}->recording as $recording)
+			$mbids[] = (string) $recording["id"];
 
 	if (count($mbids) == 0)
 		return false;
