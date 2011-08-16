@@ -307,6 +307,9 @@ abstract class AFRepoBase {
 				$triples[] = "$digitalsignal mo:sample_rate \"" . $filemetadata["sample_rate"] . "\"^^xsd:float";
 		}
 
+		// add any extra implementation-specific triples
+		$triples = array_merge($triples, $this->extraTriples($id));
+
 		// load Arc
 		require_once dirname(__FILE__) . "/lib/arc2/ARC2.php";
 
@@ -338,6 +341,20 @@ abstract class AFRepoBase {
 			throw new Exception("couldn't save RDFXML to '$rdfpath'");
 
 		return $rdfxml;
+	}
+
+	/**
+	 * extraTriples
+	 * Return an array of any extra implementation-specific triples should be 
+	 * added to the RDF given the ID of an audiofile
+	 *
+	 * This should be an array of triples in Turtle format without the trailing 
+	 * dot. (See generateRDF above.)
+	 * It should return triples about all audiofiles of the same song rather 
+	 * than just the one with the ID given.
+	 */
+	protected function extraTriples($id) {
+		return array();
 	}
 
 	/**
