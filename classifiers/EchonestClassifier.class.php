@@ -88,8 +88,10 @@ class EchonestClassifier extends AFClassifierBase {
 				$title = @$md["mbid_response"]["response"]["songs"][0]["title"];
 				if (!$title)
 					$title = $md["en_identify_response"]["response"]["songs"][0]["title"];
-				$md["mbid"] = musicbrainzLookup($artist, $title);
-				$md["mbid_source"] = "Musicbrainz web service lookup for '$artist' -- '$title'";
+				if ($mbid = musicbrainzLookup($artist, $title)) {
+					$md["mbid"] = $mbid;
+					$md["mbid_source"] = "Musicbrainz web service lookup for '$artist' -- '$title'";
+				}
 			}
 		}
 

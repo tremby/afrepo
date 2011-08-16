@@ -58,7 +58,10 @@ class SalamiClassifier extends AFClassifierBase {
 			throw new Exception("couldn't find path in metadata file");
 
 		// look up Musicbrainz ID
-		$md["mbid"] = musicbrainzLookup($md["artist"], $md["title"]);
+		if ($mbid = musicbrainzLookup($md["artist"], $md["title"])) {
+			$md["mbid"] = $mbid;
+			$md["mbid_source"] = "Musicbrainz web service lookup for '" . $md["artist"] . "' -- '" . $md["title"] . "'";
+		}
 
 		return $md;
 	}

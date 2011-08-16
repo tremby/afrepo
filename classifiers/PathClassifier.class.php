@@ -66,8 +66,10 @@ class PathClassifier extends AFClassifierBase {
 		$md["clip"] = isset($matches[3]);
 
 		// look up a Musicbrainz ID
-		$md["mbid"] = musicbrainzLookup($md["artist"], $md["title"]);
-		$md["mbid_source"] = "Musicbrainz web service lookup for '$md[artist]' -- '$md[title]'";
+		if ($mbid = musicbrainzLookup($md["artist"], $md["title"])) {
+			$md["mbid"] = $mbid;
+			$md["mbid_source"] = "Musicbrainz web service lookup for '" . $md["artist"] . "' -- '" . $md["title"] . "'";
+		}
 
 		return $md;
 	}

@@ -67,8 +67,12 @@ class ImirselDbClassifier extends AFClassifierBase {
 			$md[$row["name"]] = $row["value"];
 
 		// look up Musicbrainz ID
-		if (!isset($md["mbid"]) && isset($md["Artist"]) && isset($md["Title"]))
-			$md["mbid"] = musicbrainzLookup($md["Artist"], $md["Title"]);
+		if (!isset($md["mbid"]) && isset($md["Artist"]) && isset($md["Title"])) {
+			if ($mbid = musicbrainzLookup($md["Artist"], $md["Title"])) {
+				$md["mbid"] = $mbid;
+				$md["mbid_source"] = "Musicbrainz web service lookup for '" . $md["Artist"] . "' -- '" . $md["Title"] . "'";
+			}
+		}
 
 		return $md;
 	}
