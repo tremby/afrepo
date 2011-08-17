@@ -21,5 +21,9 @@ $basepath = $base["path"];
 		Various types of RDF are available, plus an HTML representation and 
 		potentially the audio data (use <code>audio/*</code> to accept any 
 		format of audio).</p>
+		<?php if ($repo->getSparqlEndpoint()) { ?>
+			<p>A Sparql endpoint is available at
+			<code><?php echo htmlspecialchars($repo->getSparqlEndpoint()); ?></code>.</p>
+		<?php } ?>
 	</body>
 </html>

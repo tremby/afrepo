@@ -21,6 +21,14 @@ class AFRepo extends AFRepoBase {
 		return "http://localtest.localhost/";
 	}
 
+	public function getSparqlEndpoint() {
+		return $this->getURIPrefix() . "sparql/";
+	}
+
+	public function getDataEndpoint() {
+		return $this->getURIPrefix() . "data/";
+	}
+
 	public function getAllFiles() {
 		if (!is_null($this->allfiles))
 			return $this->allfiles;

@@ -45,6 +45,14 @@ audiofiles have been classified.
 If Musicbrainz IDs were found for one or more audiofiles the RDF will now show 
 them.
 
+7.	Optionally force generation of all RDF, which, if a triplestore is set up, 
+	will also have the effect of populating the triplestore.
+		$ bin/generateall
+	You'll probably want to make sure the permissions allow the webserver to 
+	later modify those files with something like this:
+		$ sudo chown -R :www-data rdf
+		$ sudo chmod -R g+w :www-data rdf
+
 RETRIEVING INFORMATION FROM THE COMMANDLINE
 
 To get RDF for a particular file from the commandline:
@@ -97,9 +105,6 @@ submitted a patch for that).
 
 TODO
 
--	Support triplestores
--	Have a switch for bin/rdf which will generate RDF for all audiofiles 
-	(intended to then add them to the triplestore)
 -	An interactive (possibly web based, possibly text mode) classifier to choose 
 	between the various classifications which have been made or manually 
 	intervene if no MBIDs were found or none of them are correct/acceptable.

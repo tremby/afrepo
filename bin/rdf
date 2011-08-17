@@ -20,6 +20,7 @@ function usage($code = 255) {
 	$stream = $code == 0 ? STDOUT : STDERR;
 	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] <filepath>\n");
 	fwrite($stream, "Output the RDF for the given audiofile (regenerating it first if necessary)\n");
+	fwrite($stream, "Mind the permissions -- the web server may want to modify the RDF later.\n");
 	fwrite($stream, $opts->listopts());
 	exit($code);
 }

@@ -1,0 +1,88 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Bart Nagel <bjn@ecs.soton.ac.uk>
+ */
+
+require dirname(dirname(__FILE__)) . "/setup.php";
+
+// sort out commandline options
+require dirname(dirname(__FILE__)) . "/lib/clioptions/CliOptions.class.php";
+$opts = new CliOptions();
+$opts->add(null, "help");
+$opts->add(null, "force", CliOption::TYPE_SWITCH, null, "Force rebuilding of RDF even if files still seem to be fresh");
+
+function usage($code = 255) {
+	global $opts;
+	$stream = $code == 0 ? STDOUT : STDERR;
+	fwrite($stream, "Usage: " . basename($_SERVER["SCRIPT_NAME"]) . " [options] [<filepath> [...]]\n");
+	fwrite($stream, "Generate RDF for all audiofiles (and so add the RDF to the triplestore if there is one)\n");
+	fwrite($stream, "Mind the permissions -- the web server may want to modify the RDF later.\n");
+	fwrite($stream, $opts->listopts());
+	exit($code);
+}
+
+try {
+	$options = $opts->getopts();
+} catch (CliOptionException $e) {
+	fwrite(STDERR, $e->getMessage() . "\n\n");
+	usage();
+}
+
+// help message if requested
+if ($options["help"]) {
+	usage(0);
+}
+
+// complain if there are any non-option arguments
+if (!empty($options["_"])) {
+	fwrite(STDERR, "Expected no non-option arguments\n\n");
+	usage();
+}
+
+// get list of files to classify
+$repo = new AFRepo();
+echo "getting list of preferred files in repository...";
+$files = array_keys($repo->getAllPreferredFiles());
+
+// loop through file list
+$errors = array();
+echo "generating RDF and adding to triplestore if there is one\n";
+$progress_length = 60;
+echo "[" . str_repeat(" ", $progress_length) . "]";
+$i = 0;
+$count = count($files);
+$oldequals = -1;
+foreach ($files as $file) {
+	// tick progress
+	$i++;
+	$equals = round($progress_length * $i / $count) - 1;
+	if ($equals < 0)
+		$equals = 0;
+	if ($equals != $oldequals) {
+		echo "\r[" . str_repeat("=", $equals) . ">" . str_repeat(" ", $progress_length - $equals - 1) . "]";
+		$oldequals = $equals;
+	}
+
+	$id = $repo->filePathToId($file);
+
+	try {
+		$repo->getRDF($id, "RDFXML", $options["force"]);
+	} catch (Exception $e) {
+		fwrite(STDERR, $e->getMessage() . "\n");
+		$errors[] = $id;
+	}
+}
+echo "\n";
+
+if (count($errors)) {
+	fwrite(STDERR, "file IDs which had errors:\n");
+	foreach ($errors as $id)
+		fwrite(STDERR, "$id\n");
+	exit(1);
+}
+
+exit;
+
+?>

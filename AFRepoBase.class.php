@@ -26,6 +26,33 @@ abstract class AFRepoBase {
 	abstract public function getURIPrefix();
 
 	/**
+	 * getSparqlEndpoint
+	 * Return the URL of the repository triplestore's Sparql endpoint
+	 *
+	 * Return false if there is no triplestore.
+	 * If you're using 4store something like $this->getURIPrefix() . "sparql/" 
+	 * might be suitable, assuming you've configured Apache to proxy 4s-httpd to 
+	 * that location.
+	 */
+	public function getSparqlEndpoint() {
+		return false;
+	}
+
+	/**
+	 * getDataEndpoint
+	 * Return the URL of the repository triplestore's data endpoint (for PUT 
+	 * requests)
+	 *
+	 * Return false if there is no triplestore.
+	 * If you're using 4store something like $this->getURIPrefix() . "data/" 
+	 * might be suitable, assuming you've configured Apache to proxy 4s-httpd to 
+	 * that location.
+	 */
+	public function getDataEndpoint() {
+		return false;
+	}
+
+	/**
 	 * getAllFiles
 	 * Return a backwards array containing canonical pathnames for every file in 
 	 * the repository
@@ -221,8 +248,10 @@ abstract class AFRepoBase {
 			|| !file_exists($this->getRDFPath($id))
 			|| filemtime($this->getRDFPath($id)) < strtotime(self::LAST_RDF_STRUCTURE_CHANGE)
 			|| filemtime($this->getRDFPath($id)) < $this->getLastMetadataChange($id)
-		)
+		) {
 			$this->generateRDF($id);
+			$this->addToTripleStore($id);
+		}
 
 		if ($format == "RDFXML")
 			// return existing RDF
@@ -355,6 +384,33 @@ abstract class AFRepoBase {
 	 */
 	protected function extraTriples($id) {
 		return array();
+	}
+
+	/**
+	 * addToTripleStore
+	 * Add to the triplestore (if it exists) the RDF of the audiofile (and those 
+	 * of the same song) with the given ID)
+	 */
+	protected function addToTripleStore($id) {
+		if (!$this->getDataEndpoint())
+			return false;
+
+		$preferredid = $this->getPreferredId($id);
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $this->getDataEndpoint() . $this->getURIPrefix() . $preferredid);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getRDF($preferredid));
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/rdf+xml; charset=utf-8"));
+		curl_setopt($ch, CURLOPT_HEADER, true);
+
+		$response = curl_exec($ch);
+		$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		if ($code < 200 || $code >= 300)
+			throw new Exception("failed to add to triplestore. got non-OK status $code. response follows:\n$response");
+
+		return true;
 	}
 
 	/**
