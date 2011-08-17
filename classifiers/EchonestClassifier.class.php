@@ -253,15 +253,17 @@ class EchonestClassifier extends AFClassifierBase {
 		if (!file_exists($filename))
 			// it doesn't exist -- write new one
 			file_put_contents($filename, serialize(array(time(), 1)));
+			chmod($filename, 0664);
 		else {
 			// get file contents
 			list($time, $count) = unserialize(file_get_contents($filename));
 
 			// check time
-			if (time() >= $time + 60)
+			if (time() >= $time + 60) {
 				// at least a minute ago -- write new one
 				file_put_contents($filename, serialize(array(time(), 1)));
-			else {
+				chmod($filename, 0664);
+			} else {
 				// check count
 				if ($count >= self::ECHONEST_REQUESTS_PER_MIN) {
 					// maximum requests in the minute reached -- wait until 
@@ -269,9 +271,11 @@ class EchonestClassifier extends AFClassifierBase {
 					while (time() < $time + 60)
 						sleep(1);
 					file_put_contents($filename, serialize(array(time(), 1)));
+					chmod($filename, 0664);
 				} else {
 					// increment count, write file back out
 					file_put_contents($filename, serialize(array($time, $count + 1)));
+					chmod($filename, 0664);
 				}
 			}
 		}

@@ -47,6 +47,7 @@ class AFRepo extends AFRepoBase {
 
 		// write cache file
 		file_put_contents($cachefile, serialize($this->allfiles));
+		chmod($cachefile, 0664);
 
 		return $this->allfiles;
 	}

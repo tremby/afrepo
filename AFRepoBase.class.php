@@ -366,8 +366,9 @@ abstract class AFRepoBase {
 		$rdfpath = $this->getRDFPath($ids[0]);
 		if (!is_dir(dirname($rdfpath)))
 			mkdir(dirname($rdfpath));
-		if (!file_put_contents($rdfpath, $rdfxml))
+		if (!file_put_contents($rdfpath, $rdfxml)) {
 			throw new Exception("couldn't save RDFXML to '$rdfpath'");
+		chmod($rdfpath, 0664);
 
 		return $rdfxml;
 	}

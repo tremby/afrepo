@@ -81,8 +81,10 @@ abstract class AFClassifierBase {
 			throw new Exception("can't get real path of file '$filepath', which is file ID '$id'. broken symlink?");
 
 		$metadata = $this->runClassifier($filepath);
-		if ($metadata !== false)
+		if ($metadata !== false) {
 			file_put_contents($this->getDataPath($id), serialize($metadata));
+			chmod($this->getDataPath($id), 0664);
+		}
 		return $metadata;
 	}
 
