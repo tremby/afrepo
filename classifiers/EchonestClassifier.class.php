@@ -250,11 +250,11 @@ class EchonestClassifier extends AFClassifierBase {
 			usleep(100000);
 
 		// check echonest timing file
-		if (!file_exists($filename))
+		if (!file_exists($filename)) {
 			// it doesn't exist -- write new one
 			file_put_contents($filename, serialize(array(time(), 1)));
 			chmod($filename, 0664);
-		else {
+		} else {
 			// get file contents
 			list($time, $count) = unserialize(file_get_contents($filename));
 
