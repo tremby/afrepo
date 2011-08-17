@@ -197,6 +197,8 @@ if (count($errors)) {
 	fwrite(STDERR, "file IDs and classifiers which had errors:\n");
 	foreach ($errors as $id => $classifiers)
 		fwrite(STDERR, "$id\t " . implode(", ", array_map("get_class", $classifiers)) . "\n");
+
+	exit(1);
 }
 
 exit;
