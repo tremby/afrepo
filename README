@@ -108,4 +108,3 @@ TODO
 -	An interactive (possibly web based, possibly text mode) classifier to choose 
 	between the various classifications which have been made or manually 
 	intervene if no MBIDs were found or none of them are correct/acceptable.
--	Support the HTTP Range header to return partial audio
