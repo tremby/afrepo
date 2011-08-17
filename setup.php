@@ -9,6 +9,8 @@ ini_set("log_errors", !$cli);
 if (!$cli)
 	ini_set("error_log", "error_log");
 
+date_default_timezone_set("UTC");
+
 require_once "functions.php";
 
 $repo = new AFRepo();
