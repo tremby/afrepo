@@ -151,6 +151,11 @@ function notacceptable($message = "not acceptable\n", $mimetype = "text/plain") 
 	echo $message;
 	exit;
 }
+function requestedrangenotsatisfiable($message = "requested range not satisfiable\n", $mimetype = "text/plain") {
+	header("Content-Type: $mimetype", true, 416);
+	echo $message;
+	exit;
+}
 function multiplechoices($location = null, $message = "multiple choices -- be specific about what you accept\n", $mimetype = "text/plain") {
 	header("Content-Type: $mimetype", true, 300);
 	if (!is_null($location))

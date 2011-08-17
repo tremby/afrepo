@@ -89,11 +89,75 @@ if (preg_match('%^audio/%', $preferredtype)) {
 	if (!$repo->haveAudioPermission())
 		notauthorized();
 
-	header("Content-Type: $preferredtype");
-	header("Content-Length: " . filesize($repo->idToCanonicalPath($id)));
+	// get file size
+	$size = filesize($repo->idToCanonicalPath($id));
+
+	// allow parts of the file to be requested
+	header("Accept-Ranges: bytes");
+
+	// did they request a range?
+	if (isset($_SERVER["HTTP_RANGE"]) && ($pos = strpos($_SERVER["HTTP_RANGE"], "bytes=")) !== false) {
+		$ranges = explode(",", substr($_SERVER["HTTP_RANGE"], $pos + 6));
+
+		//only look at the first one for simplicity
+		$range = $ranges[0];
+		list($from, $to) = explode("-", $range);
+
+		// if the last-byte-pos is missing or too big, go to the end
+		if (empty($to) || $to >= $size) {
+			$to = $size - 1;
+		}
+
+		// accept the form -500 (final 500 bytes)
+		if (empty($from)) {
+			$from = max($size - $to, 0);
+			$to = $size - 1;
+		} else if ($from >= $size)
+			requestedrangenotsatisfiable();
+
+		// send 206 Partial content header
+		header("Content-Range: bytes ${from}-${to}/${size}", true, 206);
+		header("Content-Length: " . ($to - $from + 1));
+	} else {
+		// full file
+		$from = null;
+		$to = null;
+		header("Content-Length: $size");
+	}
+
+	// headers common to full file and range
 	lastmodified(filemtime($repo->idToCanonicalPath($id)));
+	header("Content-Type: $preferredtype");
 	header("Content-Transfer-Encoding: binary");
-	readfile($repo->idToCanonicalPath($id));
+
+	// output the data
+	if (is_null($from) && is_null($to))
+		readfile($repo->idToCanonicalPath($id));
+	else {
+		$bytesatonce = 4 * 1024;
+		$file = fopen($repo->idToCanonicalPath($id), "rb");
+		$pos = $from;
+		fseek($file, $pos);
+		while (!feof($file)) {
+			// if client has disappeared abort
+			if (connection_aborted())
+				break;
+
+			// reset time limit
+			set_time_limit(0);
+
+			// output some file
+			if (!is_null($to) && $pos + $bytesatonce > $to)
+				echo fread($file, $to - $pos);
+			else
+				echo fread($file, $bytesatonce);
+
+			// flush it to the client
+			flush();
+		}
+		fclose($file);
+	}
+
 	exit;
 }
 
