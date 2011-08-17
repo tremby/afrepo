@@ -45,6 +45,7 @@ if (!empty($options["_"])) {
 $repo = new AFRepo();
 echo "getting list of preferred files in repository...";
 $files = array_keys($repo->getAllPreferredFiles());
+echo "done\n";
 
 // loop through file list
 $errors = array();
