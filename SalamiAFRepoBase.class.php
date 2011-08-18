@@ -30,7 +30,7 @@ abstract class SalamiAFRepoBase extends AFRepoBase {
 	public function haveAudioPermission() {
 		return ipInRange($_SERVER["REMOTE_ADDR"], array(
 			"127.0.0.0/8", //localhost
-			"152.78.0.0/16", //soton
+			"152.78.64.0/23", //ECS (specifically LSL?)
 			"128.174.0.0/16", //UIUC
 		));
 	}
