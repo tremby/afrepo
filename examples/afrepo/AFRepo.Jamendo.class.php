@@ -78,6 +78,18 @@ class AFRepo extends AFRepoBase {
 
 		return $triples;
 	}
+
+	public function getMBID($id) {
+		$classifiers = array(
+			new JamendoClassifier(),
+			new TagClassifier(),
+			new EchonestClassifier(),
+		);
+		foreach ($classifiers as $classifier)
+			if ($classifier->available() && $classifier->hasMBID($id))
+				return $classifier->getMBID($id);
+		return null;
+	}
 }
 
 ?>

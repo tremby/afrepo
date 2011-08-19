@@ -81,6 +81,18 @@ class AFRepo extends AFRepoBase {
 	public function haveAudioPermission() {
 		return ipInRange($_SERVER["REMOTE_ADDR"], "127.0.0.0/8");
 	}
+
+	public function getMBID($id) {
+		$classifiers = array(
+			new TagClassifier(),
+			new EchonestClassifier(),
+			new PathClassifier(),
+		);
+		foreach ($classifiers as $classifier)
+			if ($classifier->available() && $classifier->hasMBID($id))
+				return $classifier->getMBID($id);
+		return null;
+	}
 }
 
 ?>

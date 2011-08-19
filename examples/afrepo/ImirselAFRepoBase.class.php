@@ -172,6 +172,18 @@ abstract class ImirselAFRepoBase extends AFRepoBase {
 			"128.174.0.0/16", //UIUC
 		));
 	}
+
+	public function getMBID($id) {
+		$classifiers = array(
+			new TagClassifier(),
+			new EchonestClassifier(),
+			new ImirselDbClassifier(),
+		);
+		foreach ($classifiers as $classifier)
+			if ($classifier->available() && $classifier->hasMBID($id))
+				return $classifier->getMBID($id);
+		return null;
+	}
 }
 
 ?>
