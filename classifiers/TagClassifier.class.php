@@ -13,7 +13,7 @@ class TagClassifier extends AFClassifierBase {
 	}
 
 	protected function runClassifier($filepath) {
-		require_once dirname(dirname(__FILE__)) . "/lib/getid3-1.9.0-20110620/getid3/getid3.php";
+		require_once "lib/getid3-1.9.0-20110620/getid3/getid3.php";
 
 		$md = array();
 

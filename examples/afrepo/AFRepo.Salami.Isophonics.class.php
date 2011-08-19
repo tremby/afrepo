@@ -6,6 +6,7 @@
  * AFRepo extension for the Salami Isophonics repository
  */
 
+require_once dirname(__FILE__) . "/SalamiAFRepoBase.class.php";
 class AFRepo extends SalamiAFRepoBase {
 	public function getName() {
 		return "Salami Isophonics";

@@ -25,16 +25,16 @@ class AFRepo extends AFRepoBase {
 		return $this->getURIPrefix() . "sparql/";
 	}
 
-	public function getDataEndpoint() {
-		return $this->getURIPrefix() . "data/";
-	}
+	//public function getDataEndpoint() {
+		//return $this->getURIPrefix() . "data/";
+	//}
 
 	public function getAllFiles() {
 		if (!is_null($this->allfiles))
 			return $this->allfiles;
 
 		$this->allfiles = array();
-		$path = dirname(__FILE__) . "/localtest";
+		$path = realpath("localtest");
 		$dir = dir($path);
 		while (($file = $dir->read()) !== false) {
 			if ($file[0] != "." && is_dir($path . "/" . $file)) {

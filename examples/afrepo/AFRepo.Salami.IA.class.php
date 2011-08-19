@@ -3,23 +3,24 @@
 /**
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  *
- * AFRepo extension for the Salami Codaich repository
+ * AFRepo extension for the Salami IA repository
  */
 
+require_once dirname(__FILE__) . "/SalamiAFRepoBase.class.php";
 class AFRepo extends SalamiAFRepoBase {
 	public function getName() {
-		return "Salami Codaich";
+		return "Salami IA";
 	}
 	public function getURIPrefix() {
-		return "http://codaich.salami.audiofiles.linkedmusic.org/";
+		return "http://ia.salami.audiofiles.linkedmusic.org/";
 	}
 	public function getAllFiles() {
-		return $this->allSalamiFiles("Codaich");
+		return $this->allSalamiFiles("IA");
 	}
 	public function getSparqlEndpoint() {
 		return false;
 	}
 	public function getDataEndpoint() {
-		return "http://localhost:7003/data/";
+		return "http://localhost:7004/data/";
 	}
 }

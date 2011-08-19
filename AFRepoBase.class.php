@@ -177,7 +177,7 @@ abstract class AFRepoBase {
 	 * slash)
 	 */
 	public function getAudioPath() {
-		return dirname(__FILE__) . "/audio";
+		return realpath("audio");
 	}
 
 	/**
@@ -234,7 +234,7 @@ abstract class AFRepoBase {
 	 * audiofiles may share an RDF representation.
 	 */
 	public function getRDFPath($id) {
-		return dirname(__FILE__) . "/rdf/" . self::splitId($this->getPreferredId($id)) . ".xml";
+		return "rdf/" . self::splitId($this->getPreferredId($id)) . ".xml";
 	}
 
 	/**
@@ -258,7 +258,7 @@ abstract class AFRepoBase {
 			return file_get_contents($this->getRDFPath($id));
 
 		// convert saved RDF to the required format
-		require_once dirname(__FILE__) . "/lib/arc2/ARC2.php";
+		require_once "lib/arc2/ARC2.php";
 
 		$parser = ARC2::getRDFParser();
 		$parser->parse($this->getURIPrefix(), file_get_contents($this->getRDFPath($id)));
@@ -340,7 +340,7 @@ abstract class AFRepoBase {
 		$triples = array_merge($triples, $this->extraTriples($id));
 
 		// load Arc
-		require_once dirname(__FILE__) . "/lib/arc2/ARC2.php";
+		require_once "lib/arc2/ARC2.php";
 
 		// turn those triples into Turtle
 		$ttl = "";
@@ -443,7 +443,7 @@ abstract class AFRepoBase {
 	 * information about its encoding
 	 */
 	public function getFileMetadata($id) {
-		require_once dirname(__FILE__) . "/lib/getid3-1.9.0-20110620/getid3/getid3.php";
+		require_once "lib/getid3-1.9.0-20110620/getid3/getid3.php";
 		$getID3 = new getID3();
 		$fileinfo = $getID3->analyze($this->idToCanonicalPath($id));
 		$md = array();

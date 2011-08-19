@@ -27,7 +27,7 @@ class SalamiClassifier extends AFClassifierBase {
 			return $this->fh;
 		}
 
-		$this->fh = fopen(dirname(dirname(__FILE__)) . "/salami_metadata.csv", "r");
+		$this->fh = fopen("salami_metadata.csv", "r");
 		if ($this->fh === null)
 			throw new Exception("couldn't open Salami metadata CSV file");
 

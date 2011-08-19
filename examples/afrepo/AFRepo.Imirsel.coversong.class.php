@@ -3,23 +3,24 @@
 /**
  * Bart Nagel <bjn@ecs.soton.ac.uk>
  *
- * AFRepo extension for the Imirsel uspop repository
+ * AFRepo extension for the Imirsel coversong repository
  */
 
+require_once dirname(__FILE__) . "/ImirselAFRepoBase.class.php";
 class AFRepo extends ImirselAFRepoBase {
 	public function getName() {
-		return "Imirsel uspop";
+		return "Imirsel coversong";
 	}
 	public function getURIPrefix() {
-		return "http://uspop.imirsel.audiofiles.linkedmusic.org/";
+		return "http://coversong.imirsel.audiofiles.linkedmusic.org/";
 	}
 	public function getPathFilter() {
-		return "%/b/%";
+		return "%/c/%";
 	}
 	public function getSparqlEndpoint() {
 		return false;
 	}
 	public function getDataEndpoint() {
-		return "http://localhost:7002/data/";
+		return "http://localhost:7001/data/";
 	}
 }

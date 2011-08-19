@@ -50,7 +50,12 @@ if ($options["id"])
 else
 	$id = $repo->filePathToId($options["_"][0]);
 
-echo $repo->getRDF($id, $options["format"], $options["force"]);
+try {
+	echo $repo->getRDF($id, $options["format"], $options["force"]);
+} catch (Exception $e) {
+	fwrite(STDERR, $e->getMessage() . "\n");
+	exit(1);
+}
 
 exit;
 

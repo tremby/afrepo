@@ -76,8 +76,8 @@ class JamendoClassifier extends AFClassifierBase {
 		$md["tracknum"] = $tracknum;
 		$md["trackid"] = $trackid;
 
-		require_once dirname(dirname(__FILE__)) . "/lib/arc2/ARC2.php";
-		require_once dirname(dirname(__FILE__)) . "/lib/Graphite/graphite/Graphite.php";
+		require_once "lib/arc2/ARC2.php";
+		require_once "lib/Graphite/graphite/Graphite.php";
 
 		$graph = new Graphite($GLOBALS["ns"]);
 		$triplecount = $graph->loadSPARQL("http://dbtune.org/jamendo/sparql/", "construct { <http://dbtune.org/jamendo/track/$trackid> owl:sameAs ?mbz . } where { <http://dbtune.org/jamendo/track/$trackid> a mo:Track; owl:sameAs ?mbz . }");

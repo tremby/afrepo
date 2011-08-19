@@ -11,7 +11,7 @@ class EchonestClassifier extends AFClassifierBase {
 		return "1WJE4HXGNDRCZ7MMK";
 	}
 	private function getFingerprinterPath() {
-		return dirname(dirname(__FILE__)) . "/lib/codegen-3.15/codegen.Linux-x86_64";
+		return "lib/codegen-3.15/codegen.Linux-x86_64";
 	}
 
 	public function getName() {

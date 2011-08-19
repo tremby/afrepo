@@ -6,6 +6,7 @@
  * Abstract AFRepo extension for the Imirsel repository
  */
 
+require_once dirname(__FILE__) . "/SalamiAFRepoBase.class.php";
 abstract class ImirselAFRepoBase extends AFRepoBase {
 	private $db = null;
 	private $allfiles = null;
