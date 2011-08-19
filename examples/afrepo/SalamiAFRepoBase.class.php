@@ -39,7 +39,7 @@ abstract class SalamiAFRepoBase extends AFRepoBase {
 		$classifiers = array(
 			new TagClassifier(),
 			new EchonestClassifier(),
-			new ImirselDbClassifier(),
+			new SalamiClassifier(),
 		);
 		foreach ($classifiers as $classifier)
 			if ($classifier->available() && $classifier->hasMBID($id))
