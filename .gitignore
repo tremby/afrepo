@@ -9,6 +9,5 @@ classifiers/*
 !classifiers/NullClassifier.class.php
 !classifiers/TagClassifier.class.php
 !classifiers/PathClassifier.class.php
-dbsetup.sh
 audio
 AFRepo.class.php
