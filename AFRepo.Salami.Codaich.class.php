@@ -16,4 +16,10 @@ class AFRepo extends SalamiAFRepoBase {
 	public function getAllFiles() {
 		return $this->allSalamiFiles("Codaich");
 	}
+	public function getSparqlEndpoint() {
+		return false;
+	}
+	public function getDataEndpoint() {
+		return "http://localhost:7003/data/";
+	}
 }
