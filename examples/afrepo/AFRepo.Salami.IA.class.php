@@ -17,9 +17,6 @@ class AFRepo extends SalamiAFRepoBase {
 	public function getAllFiles() {
 		return $this->allSalamiFiles("IA");
 	}
-	public function getSparqlEndpoint() {
-		return false;
-	}
 	public function getDataEndpoint() {
 		return "http://localhost:7004/data/";
 	}

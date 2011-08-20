@@ -17,9 +17,6 @@ class AFRepo extends ImirselAFRepoBase {
 	public function getPathFilter() {
 		return "%/b/%";
 	}
-	public function getSparqlEndpoint() {
-		return false;
-	}
 	public function getDataEndpoint() {
 		return "http://localhost:7002/data/";
 	}

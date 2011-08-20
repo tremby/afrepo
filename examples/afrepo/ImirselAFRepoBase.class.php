@@ -184,6 +184,10 @@ abstract class ImirselAFRepoBase extends AFRepoBase {
 				return $classifier->getMBID($id);
 		return null;
 	}
+
+	public function getSparqlEndpoint() {
+		return $this->getURIPrefix() . "sparql/";
+	}
 }
 
 ?>
