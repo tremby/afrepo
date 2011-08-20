@@ -22,7 +22,7 @@ class AFRepo extends AFRepoBase {
 	}
 
 	public function getDataEndpoint() {
-		return $this->getURIPrefix() . "data/";
+		return "http://localhost:7001/data/";
 	}
 
 	public function getAllFiles() {
